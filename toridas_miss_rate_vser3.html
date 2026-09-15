@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Toridas Miss Rate — ระบบ QC โรงงาน</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&family=Zilla+Slab:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+/* ===================== Unified token system =====================
+   Merges the Toridas entry-form palette and the Bone Checkpoint
+   palette into one consistent industrial steel+amber system. */
+:root{
+  --steel-950:#12181c;
+  --steel-900:#1b2328;
+  --steel-800:#263137;
+  --steel-700:#3a474e;
+  --steel-600:#57676f;
+  --steel-500:#7c8d94;
+  --steel-300:#b8c4c8;
+  --steel-100:#e7ecee;
+  --steel-050:#f4f7f7;
+  --paper:#ffffff;
+
+  --amber:#e8a230;
+  --amber-dark:#c2841f;
+  --amber-bg:#fbf0dd;
+
+  --red:#c0392b;
+  --red-deep:#8f2a20;
+  --red-bg:#fbeae8;
+
+  --green:#3f7d5c;
+  --green-bg:#eaf3ee;
+
+  --warn:#d98c0f;
+  --warn-bg:#fdf3e2;
+
+  --font-display:'Zilla Slab', Georgia, serif;
+  --font-body:'IBM Plex Sans Thai', system-ui, sans-serif;
+  --font-mono:'IBM Plex Mono', monospace;
+
+  --radius:10px;
+  --radius-sm:7px;
+  --shadow:0 1px 2px rgba(18,24,28,0.06), 0 4px 14px rgba(18,24,28,0.06);
+  --shadow-lift:0 8px 24px rgba(18,24,28,0.16);
+
+  /* Aliases so both ported apps' original token names keep working unchanged */
+  --ink:var(--steel-900);
+  --ink-light:var(--steel-800);
+  --steel-50:var(--steel-050);
+  --steel-200:#cdd7da;
+  --font-ui:var(--font-body);
+  --font-head:var(--font-display);
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:var(--font-body);
+  background:var(--steel-050);
+  background-image:radial-gradient(circle at 1px 1px, var(--steel-100) 1px, transparent 0);
+  background-size:22px 22px;
+  color:var(--steel-900);
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+  padding-bottom:16px;
+}
+::selection{background:var(--amber); color:var(--steel-950);}
+button, select, input, textarea{font-family:inherit;}
+
+/* ---------- Top shell ---------- */
+.shell-header{
+  background:linear-gradient(135deg,var(--steel-950) 0%,var(--steel-800) 100%);
+  color:#f2f5f6;
+  padding:14px 18px 0;
+  position:relative;
+}
+.shell-header::after{
+  content:'';position:absolute; inset:0;
+  background:repeating-linear-gradient(115deg, rgba(255,255,255,0.03) 0 2px, transparent 2px 26px);
+  pointer-events:none;
+}
+.shell-top-row{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  position:relative; max-width:1180px; margin:0 auto; padding-bottom:12px;
+}
+.brand{display:flex; align-items:center; gap:11px;}
+.brand-mark{
+  width:36px;height:36px;border-radius:9px;background:var(--amber);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-display);font-weight:700;color:var(--steel-950);font-size:14px;flex:none;
+  box-shadow:inset 0 -3px 0 rgba(0,0,0,0.15);
+}
+.brand-titles h1{font-family:var(--font-display);font-size:16.5px;font-weight:600;margin:0;}
+.brand-titles p{margin:1px 0 0;font-size:11.5px;color:#c7d3d8;display:flex;align-items:center;gap:6px;}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--steel-500);flex:none;}
+.status-dot.on{background:#5fd39a;box-shadow:0 0 0 3px rgba(95,211,154,0.2);}
+.status-dot.off{background:var(--red);box-shadow:0 0 0 3px rgba(192,57,43,0.25);}
+.icon-btn{
+  background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.14);color:#f2f5f6;
+  width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:17px;flex:none;transition:background .15s ease;
+}
+.icon-btn:hover{background:rgba(255,255,255,0.16);}
+
+.tabs{display:flex;gap:2px;max-width:1180px;margin:0 auto;position:relative;overflow-x:auto;}
+.tab-btn{
+  background:none;border:none;color:#c7d3d8;font-family:var(--font-body);font-weight:600;font-size:13.5px;
+  padding:11px 16px;cursor:pointer;border-radius:9px 9px 0 0;white-space:nowrap;
+  border-bottom:3px solid transparent;transition:all .15s ease;
+}
+.tab-btn:hover{color:#fff;background:rgba(255,255,255,0.06);}
+.tab-btn.active{color:var(--steel-900);background:var(--steel-050);border-bottom-color:var(--amber);}
+
+.tab-panel{display:none;max-width:1180px;margin:0 auto;padding:18px 16px 40px;}
+.tab-panel.active{display:block;}
+
+/* ---------- Settings panel (shared) ---------- */
+.settings-panel{max-width:1180px;margin:0 auto;padding:0 16px;overflow:hidden;max-height:0;transition:max-height .25s ease;}
+.settings-panel.open{max-height:900px;}
+.settings-inner{background:var(--paper);border:1px solid var(--steel-100);border-radius:var(--radius);padding:16px;margin-top:14px;box-shadow:var(--shadow);}
+.settings-inner h3{font-family:var(--font-display);font-size:14.5px;margin:0 0 10px;color:var(--steel-900);}
+.settings-inner h3:not(:first-child){margin-top:20px;padding-top:16px;border-top:1px dashed var(--steel-100);}
+.settings-inner label{font-size:12px;font-weight:600;color:var(--steel-600);display:block;margin-bottom:6px;}
+.settings-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;}
+.settings-row input{flex:1;min-width:180px;}
+.settings-hint{font-size:11.5px;color:var(--steel-600);margin:8px 0 0;line-height:1.6;}
+.mention-row{display:grid;grid-template-columns:1fr 1fr auto;gap:6px;margin-bottom:6px;}
+.mention-row input{width:100%;}
+#appVersionText{font-family:var(--font-mono);color:var(--steel-900);}
+
+/* ---------- Generic form controls (shared look) ---------- */
+input[type="date"],input[type="time"],select,textarea,input[type="number"],input[type="text"],input[type="url"]{
+  border:1.5px solid var(--steel-300);border-radius:var(--radius-sm);padding:11px 12px;font-size:16px;
+  color:var(--steel-900);background:var(--paper);width:100%;transition:border-color .15s ease;
+  min-height:44px;box-sizing:border-box;
+}
+textarea{min-height:64px;}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--amber);box-shadow:0 0 0 3px rgba(232,162,48,0.18);}
+select{appearance:none;-webkit-appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2357676f' stroke-width='2.5'><path d='M6 9l6 6 6-6'/></svg>");
+  background-repeat:no-repeat;background-position:right 10px center;padding-right:32px;
+}
+.card{background:var(--paper);border:1px solid var(--steel-100);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;margin-bottom:14px;}
+.card h2{font-family:var(--font-display);font-size:15.5px;font-weight:600;margin:0 0 14px;color:var(--steel-900);display:flex;align-items:center;justify-content:space-between;}
+.btn{border:none;border-radius:var(--radius-sm);padding:12px 18px;font-size:14.5px;font-weight:600;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:transform .1s ease,opacity .15s ease;white-space:nowrap;
+  min-height:44px;}
+.btn:active{transform:scale(0.97);}
+.btn:disabled{opacity:0.55;cursor:not-allowed;}
+.btn-primary{background:var(--amber);color:var(--steel-950);box-shadow:0 2px 0 var(--amber-dark);}
+.btn-secondary{background:var(--steel-100);color:var(--steel-900);}
+.btn-outline{background:var(--paper);color:var(--steel-900);border:1.5px solid var(--steel-300);}
+.btn-small{padding:9px 13px;font-size:13px;min-height:40px;}
+.btn-text{background:none;color:var(--steel-600);text-decoration:underline;padding:8px 4px;min-height:auto;}
+
+.toast-container{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:80;display:flex;flex-direction:column;gap:8px;width:min(92vw,420px);}
+.toast{background:var(--steel-950);color:#fff;padding:12px 14px;border-radius:var(--radius-sm);font-size:13.5px;
+  box-shadow:0 8px 24px rgba(0,0,0,0.2);display:flex;align-items:center;gap:8px;animation:slideDown .2s ease;}
+.toast.success{background:var(--green);}
+.toast.error{background:var(--red);}
+.toast.warning{background:var(--warn);}
+@keyframes slideDown{from{opacity:0;transform:translateY(-10px);}to{opacity:1;transform:translateY(0);}}
+
+@media (prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important;}}
+
+/* ---------- Toridas layout ---------- */
+.container{max-width:880px;margin:0 auto;padding:16px 16px 96px;}
+.field-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+.field{display:flex;flex-direction:column;gap:5px;}
+.field label{font-size:12px;font-weight:600;color:var(--steel-600);}
+.field .thai-date-hint{font-family:var(--font-mono);font-size:11px;color:var(--amber-dark);margin-top:2px;}
+select.placeholder-active{color:var(--steel-600);}
+textarea{min-height:64px;resize:vertical;}
+
+/* ---------- Machine cards ---------- */
+.machine-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;}
+.empty-state{
+  grid-column:1/-1;text-align:center;padding:36px 20px;color:var(--steel-600);
+  border:1.5px dashed var(--steel-200);border-radius:var(--radius-sm);font-size:13.5px;line-height:1.7;
+}
+.machine-card{
+  border:1.5px solid var(--steel-100);border-radius:var(--radius-sm);padding:13px;background:var(--steel-50);
+  transition:border-color .2s ease, background .2s ease;
+}
+.machine-card.tier-danger{border-color:var(--red);background:var(--red-bg);}
+.machine-card.tier-warn{border-color:var(--warn);background:var(--warn-bg);}
+.machine-card.tier-good{border-color:var(--steel-100);}
+.machine-card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.machine-name{font-family:var(--font-head);font-size:16.5px;font-weight:600;color:var(--ink);}
+.machine-side{font-size:10.5px;color:var(--steel-600);font-weight:500;letter-spacing:0.3px;}
+
+.gauge-ring{
+  --pct:0%;--ring-color:var(--steel-300);
+  width:42px;height:42px;border-radius:50%;flex:none;
+  background:conic-gradient(var(--ring-color) var(--pct), var(--steel-100) 0);
+  display:flex;align-items:center;justify-content:center;position:relative;
+}
+.gauge-ring::before{content:'';position:absolute;inset:3.5px;background:var(--paper);border-radius:50%;}
+.gauge-ring span{position:relative;z-index:1;font-family:var(--font-mono);font-size:10px;font-weight:700;color:var(--ink);}
+
+.legs-in-row{margin-bottom:10px;}
+.legs-in-row label{font-size:11.5px;font-weight:600;color:var(--steel-600);display:block;margin-bottom:4px;}
+.legs-in-row input{font-family:var(--font-mono);font-weight:600;}
+.legs-in-row input.input-warn{border-color:var(--amber);background:var(--amber-bg);}
+
+.checkpoint-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px;}
+.checkpoint-field{display:flex;flex-direction:column;gap:3px;}
+.checkpoint-field label{font-size:10.5px;font-weight:600;color:var(--steel-600);text-align:center;}
+.checkpoint-field input{text-align:center;padding:9px 4px;font-family:var(--font-mono);font-size:16px;font-weight:500;min-height:42px;}
+.machine-card-foot{
+  font-size:11.5px;color:var(--steel-600);border-top:1px dashed var(--steel-200);
+  padding-top:8px;display:flex;justify-content:space-between;
+}
+.machine-card-foot strong{font-family:var(--font-mono);color:var(--ink);}
+
+/* ---------- Summary ---------- */
+.summary-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;}
+.stat-box{background:var(--steel-50);border:1px solid var(--steel-100);border-radius:var(--radius-sm);padding:11px 10px;text-align:center;}
+.stat-box .stat-label{font-size:10.5px;color:var(--steel-600);font-weight:600;}
+.stat-box .stat-value{font-family:var(--font-mono);font-size:19px;font-weight:700;color:var(--ink);margin-top:3px;}
+.alert-banner{
+  display:none;align-items:flex-start;gap:9px;
+  background:var(--red-bg);border:1px solid var(--red);color:#8a2c26;
+  border-radius:var(--radius-sm);padding:11px 12px;font-size:13px;line-height:1.6;
+}
+.alert-banner.show{display:flex;}
+.alert-banner .ic{font-size:16px;flex:none;}
+.alert-banner b{font-family:var(--font-mono);}
+
+/* ---------- Sticky action bar ---------- */
+.sticky-bar{
+  position:fixed;left:0;right:0;bottom:0;z-index:40;
+  background:var(--paper);border-top:1px solid var(--steel-100);
+  box-shadow:0 -6px 20px rgba(27,42,51,0.08);
+  padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));
+  display:none;
+}
+.tab-panel.active .sticky-bar{display:block;}
+.sticky-inner{max-width:880px;margin:0 auto;display:flex;align-items:center;gap:8px;}
+.sticky-avg{flex:none;font-family:var(--font-mono);font-size:12px;color:var(--steel-600);padding-right:6px;border-right:1px solid var(--steel-100);margin-right:2px;}
+.sticky-avg strong{display:block;font-size:16px;color:var(--ink);}
+.sticky-inner .btn-primary{flex:1;}
+
+/* ---------- History ---------- */
+.history-toggle{
+  width:100%;background:none;border:none;display:flex;align-items:center;justify-content:space-between;
+  cursor:pointer;padding:2px 0;color:var(--ink);
+}
+.history-toggle .car{transition:transform .2s ease;color:var(--steel-600);}
+.history-toggle.open .car{transform:rotate(180deg);}
+.history-content{overflow:hidden;max-height:0;transition:max-height .25s ease;}
+.history-content.open{max-height:600px;overflow-y:auto;margin-top:12px;}
+.history-batch{border:1px solid var(--steel-100);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;font-size:12.5px;}
+.history-batch-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:6px;}
+.history-batch-head .htitle{font-weight:600;color:var(--ink);}
+.history-batch-head .hmeta{font-family:var(--font-mono);color:var(--steel-600);font-size:11.5px;}
+.pill{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;}
+.pill.good{background:var(--green-bg);color:var(--green);}
+.pill.danger{background:var(--red-bg);color:var(--red);}
+.pill.sent{background:var(--green-bg);color:var(--green);}
+.pill.failed{background:var(--red-bg);color:var(--red);}
+.history-machines{display:flex;flex-wrap:wrap;gap:5px;}
+.hchip{font-family:var(--font-mono);font-size:11px;background:var(--steel-50);border:1px solid var(--steel-100);border-radius:6px;padding:2px 6px;}
+.hchip.danger{background:var(--red-bg);border-color:var(--red);color:#8a2c26;}
+.history-empty{color:var(--steel-600);font-size:13px;text-align:center;padding:14px 0;}
+.history-actions{display:flex;justify-content:flex-end;margin-top:6px;}
+
+/* ---------- Phone (standard ~360–430px) ---------- */
+@media (max-width:600px){
+  .container{padding:12px 12px 100px;}
+  .card{padding:14px;}
+  .field-grid{grid-template-columns:1fr 1fr;gap:10px;}
+  .summary-stats{grid-template-columns:1fr 1fr;}
+  .summary-stats .stat-box:last-child{grid-column:1/-1;}
+  .machine-grid{grid-template-columns:1fr;}
+  .checkpoint-grid{grid-template-columns:repeat(4,1fr);gap:6px;}
+  .sticky-inner{flex-wrap:wrap;}
+  .sticky-avg{width:100%;border-right:none;border-bottom:1px solid var(--steel-100);padding-bottom:6px;margin-bottom:2px;display:flex;justify-content:space-between;align-items:center;}
+  .shell-header{padding:14px 14px 0;}
+  .brand-titles h1{font-size:15.5px;}
+}
+@media (max-width:380px){
+  .checkpoint-grid{gap:5px;}
+  .checkpoint-field input{padding:8px 2px;font-size:15px;}
+}
+
+/* ---------- Tablet (standard ~600–1024px, e.g. iPad) ---------- */
+@media (min-width:601px) and (max-width:1024px){
+  .container{max-width:720px;padding:22px 24px 100px;}
+  .tab-panel, .settings-panel, .sticky-inner{max-width:720px;}
+  .machine-grid{grid-template-columns:repeat(2,minmax(260px,1fr));gap:14px;}
+  .field-grid{grid-template-columns:repeat(4,1fr);}
+  .summary-stats{grid-template-columns:repeat(3,1fr);}
+}
+
+</style>
+</head>
+<body>
+
+<div class="shell-header">
+  <div class="shell-top-row">
+    <div class="brand">
+      <div class="brand-mark">QC</div>
+      <div class="brand-titles">
+        <h1>Toridas Miss Rate</h1>
+      </div>
+    </div>
+    <button class="icon-btn" id="settingsBtn" aria-label="ตั้งค่า">⚙</button>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="tab-toridas">บันทึกข้อมูล</button>
+    <button class="tab-btn" data-tab="tab-export">ส่งออก Excel</button>
+  </div>
+</div>
+
+<div class="settings-panel" id="settingsPanel">
+  <div class="settings-inner">
+    <h3>Power Automate (Toridas)</h3>
+    <label for="paUrl">Flow URL (HTTP Trigger)</label>
+    <div class="settings-row">
+      <input type="url" id="paUrl" placeholder="https://prod-xx.xxx.logic.azure.com/workflows/...">
+      <button class="btn btn-primary btn-small" id="saveSettingsBtn">บันทึก URL</button>
+    </div>
+    <p class="settings-hint">⚠ ปิดใช้งานชั่วคราว (โหมดเดโม) — ตอนนี้ข้อมูล Toridas บันทึกในเครื่องเท่านั้น ยังไม่ส่งไป Power Automate จริง เก็บช่องนี้ไว้เผื่อกลับมาเปิดใช้งานจริงทีหลัง</p>
+
+    <h3>ผู้รับผิดชอบประจำจุด (สำหรับ mention ในข้อความแจ้งเตือน)</h3>
+    <div class="mention-row" style="font-weight:600;font-size:11px;color:var(--steel-600);">
+      <span>Line / จุดงาน</span><span>Telegram mention (เช่น @username)</span><span></span>
+    </div>
+    <div id="mentionRows"></div>
+    <div class="settings-row" style="margin-top:4px;">
+      <input type="text" id="newMentionLine" placeholder="ชื่อ Line/จุดงาน เช่น Line 6" style="max-width:160px;">
+      <input type="text" id="newMentionHandle" placeholder="@username หรือชื่อที่จะ mention">
+      <button class="btn btn-outline btn-small" id="addMentionBtn">+ เพิ่ม</button>
+    </div>
+    <label for="supervisorMention" style="margin-top:10px;">หัวหน้า (mention ทุกครั้งที่มีแจ้งเตือน ไม่ว่าจุดไหน)</label>
+    <div class="settings-row">
+      <input type="text" id="supervisorMention" placeholder="@หัวหน้าสมชาย">
+      <button class="btn btn-outline btn-small" id="saveSupervisorBtn">บันทึก</button>
+    </div>
+    <p class="settings-hint">ข้อความแจ้งเตือนจะ mention หัวหน้าเสมอ บวกกับผู้รับผิดชอบของ Line/จุดงานนั้นๆ ถ้ามีตั้งไว้ (ใช้ Chat ID กลุ่มเดียวกันด้านบน mention คนในกลุ่ม)</p>
+
+    <p class="settings-hint" style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--steel-100);">เวอร์ชันไฟล์: <strong id="appVersionText"></strong></p>
+  </div>
+</div>
+
+<div class="tab-panel active" id="tab-toridas">
+<main class="container">
+
+  <section class="card">
+    <h2>ข้อมูลรอบตรวจ</h2>
+    <div class="field-grid">
+      <div class="field">
+        <label for="dateInput">วันที่</label>
+        <input type="date" id="dateInput">
+        <span class="thai-date-hint" id="thaiDateHint">→ พ.ศ. —</span>
+      </div>
+      <div class="field">
+        <label for="timeInput">เวลา</label>
+        <input type="time" id="timeInput">
+      </div>
+      <div class="field">
+        <label for="lineSelect">Line</label>
+        <select id="lineSelect" class="placeholder-active">
+          <option value="">— เลือก Line —</option>
+          <option value="Line 6">Line 6 (6 เครื่อง)</option>
+          <option value="Line 8">Line 8 (8 เครื่อง)</option>
+          <option value="Line S6">Line S6 (2 เครื่อง)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="shiftSelect">กะ</label>
+        <select id="shiftSelect" class="placeholder-active">
+          <option value="">— เลือกกะ —</option>
+          <option value="กะ 1">กะ 1</option>
+          <option value="กะ 2">กะ 2</option>
+        </select>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>ข้อมูลแต่ละเครื่อง <span class="muted-count" id="machineCountLabel"></span></h2>
+    <div class="machine-grid" id="machineGrid">
+      <div class="empty-state">กรุณาเลือก Line ด้านบนก่อน<br>ระบบจะแสดงเครื่องทั้งหมดในไลน์นั้นให้กรอกครบทุกเครื่อง</div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>สรุปผลรอบนี้</h2>
+    <div class="summary-stats">
+      <div class="stat-box">
+        <div class="stat-label">รวมขาเข้า</div>
+        <div class="stat-value" id="sumLegsIn">—</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">รวมขา Miss</div>
+        <div class="stat-value" id="sumMiss">—</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">AVG Miss rate</div>
+        <div class="stat-value" id="sumAvg">—</div>
+      </div>
+    </div>
+    <div class="alert-banner" id="alertBanner">
+      <span class="ic">⚠️</span>
+      <span id="alertBannerText"></span>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>หมายเหตุ</h2>
+    <textarea id="notesInput" placeholder="บันทึกเพิ่มเติม (ถ้ามี)"></textarea>
+  </section>
+
+  <section class="card">
+    <button class="history-toggle" id="historyToggle">
+      <span>ประวัติการบันทึกในเครื่องนี้ (<span id="historyCount">0</span> รอบ)</span>
+      <span class="car">▾</span>
+    </button>
+    <div class="history-content" id="historyContent">
+      <div id="historyList"></div>
+      <div class="history-actions">
+        <button class="btn btn-text btn-small" id="clearHistoryBtn">ล้างประวัติทั้งหมด</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<div class="sticky-bar">
+  <div class="sticky-inner">
+    <div class="sticky-avg">AVG รวม<strong id="stickyAvg">—</strong></div>
+    <button class="btn btn-secondary btn-small" id="clearFormBtn">ล้างฟอร์ม</button>
+    <button class="btn btn-primary" id="submitBtn">บันทึก</button>
+  </div>
+</div>
+</div>
+
+<div class="tab-panel" id="tab-export">
+<main class="container">
+
+  <section class="card">
+    <h2>ส่งออกตามช่วงวันที่</h2>
+    <div class="field-grid">
+      <div class="field">
+        <label for="exportStartDate">วันที่เริ่มต้น</label>
+        <input type="date" id="exportStartDate">
+      </div>
+      <div class="field">
+        <label for="exportEndDate">วันที่สิ้นสุด</label>
+        <input type="date" id="exportEndDate">
+      </div>
+    </div>
+    <p class="settings-hint" id="exportRangeInfo">พบ 0 รายการในช่วงที่เลือก</p>
+    <button class="btn btn-primary" id="exportRangeBtn" style="width:100%;margin-top:6px;">ส่งออก Excel ตามช่วงที่เลือก</button>
+  </section>
+
+  <section class="card">
+    <h2>ส่งออกทั้งหมด</h2>
+    <p class="settings-hint">มีข้อมูลสะสมทั้งหมด <strong id="exportTotalCount">0</strong> รายการในเครื่องนี้</p>
+    <button class="btn btn-outline" id="exportAllBtn" style="width:100%;">ส่งออกข้อมูลทั้งหมดเป็น Excel</button>
+  </section>
+
+</main>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+/* ===================== SHARED (shell-level) ===================== */
+var APP_VERSION = '2026-09-16-export-tab';
+var SHARED_SETTINGS_KEY = 'qcSharedPaUrlV1';
+var DEFAULT_PA_URL = 'https://default8c308e1514804168aed7b0f7a13520.95.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/c38072771cf945b48ea93c93dc352515/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=HwR56PJW4EEXVhlhu6GOeobdb_2xilW6pRyy-QENmzw';
+
+function showToast(msg, type){
+  var c = document.getElementById('toastContainer');
+  var t = document.createElement('div');
+  t.className = 'toast' + (type ? ' '+type : '');
+  var icon = type==='success' ? '✓' : type==='error' ? '✕' : type==='warning' ? '⚠' : 'ℹ';
+  t.innerHTML = '<span>'+icon+'</span><span style="flex:1;word-break:break-word;"></span><span style="cursor:pointer;opacity:0.7;padding-left:4px;" title="ปิด">×</span>';
+  t.querySelector('span:nth-child(2)').textContent = msg;
+  var dismiss = function(){
+    t.style.transition = 'opacity .25s ease';
+    t.style.opacity = '0';
+    setTimeout(function(){ t.remove(); }, 260);
+  };
+  t.querySelector('span:last-child').addEventListener('click', dismiss);
+  c.appendChild(t);
+  var duration = type === 'error' ? 20000 : 3600;
+  setTimeout(dismiss, duration);
+}
+
+/* ---------- Power Automate settings ---------- */
+function loadPaSettings(){
+  var url = localStorage.getItem(SHARED_SETTINGS_KEY);
+  if(!url){
+    url = DEFAULT_PA_URL;
+    localStorage.setItem(SHARED_SETTINGS_KEY, url);
+  }
+  document.getElementById('paUrl').value = url;
+  updatePaStatus();
+}
+function updatePaStatus(){
+  var dot = document.getElementById('statusDot');
+  var text = document.getElementById('statusText');
+  if(!dot || !text) return;
+  dot.className = 'status-dot on';
+  text.textContent = 'โหมดเดโม — ไม่ได้เชื่อมต่อ Power Automate/Telegram จริง';
+}
+function getPaUrl(){ return localStorage.getItem(SHARED_SETTINGS_KEY) || ''; }
+
+document.getElementById('settingsBtn').addEventListener('click', function(){
+  document.getElementById('settingsPanel').classList.toggle('open');
+});
+
+/* ---------- Tab switching ---------- */
+document.querySelectorAll('.tab-btn').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+    document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
+    btn.classList.add('active');
+    document.getElementById(btn.getAttribute('data-tab')).classList.add('active');
+    if(btn.getAttribute('data-tab') === 'tab-export' && typeof window.refreshExportTab === 'function'){
+      window.refreshExportTab();
+    }
+  });
+});
+document.getElementById('saveSettingsBtn').addEventListener('click', function(){
+  var url = document.getElementById('paUrl').value.trim();
+  localStorage.setItem(SHARED_SETTINGS_KEY, url);
+  updatePaStatus();
+  showToast(url ? 'บันทึก Power Automate URL แล้ว' : 'ลบ URL แล้ว', 'success');
+});
+
+/* ---------- Mention config (Line/จุดงาน -> Telegram handle) ---------- */
+function loadMentions(){
+  try{ return JSON.parse(localStorage.getItem(MENTION_KEY)) || {supervisor:'', map:{}}; }
+  catch(e){ return {supervisor:'', map:{}}; }
+}
+function saveMentions(data){
+  localStorage.setItem(MENTION_KEY, JSON.stringify(data));
+}
+function renderMentionRows(){
+  var data = loadMentions();
+  var el = document.getElementById('mentionRows');
+  var keys = Object.keys(data.map);
+  if(keys.length === 0){
+    el.innerHTML = '<p class="settings-hint" style="margin:0 0 8px;">ยังไม่มีรายการ — เพิ่มด้านล่าง</p>';
+  } else {
+    el.innerHTML = keys.map(function(line){
+      return '<div class="mention-row">' +
+        '<input type="text" value="'+line.replace(/"/g,'&quot;')+'" disabled>' +
+        '<input type="text" value="'+(data.map[line]||'').replace(/"/g,'&quot;')+'" disabled>' +
+        '<button class="btn btn-text btn-small" data-remove-line="'+line.replace(/"/g,'&quot;')+'">ลบ</button>' +
+        '</div>';
+    }).join('');
+    el.querySelectorAll('[data-remove-line]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var d = loadMentions();
+        delete d.map[btn.getAttribute('data-remove-line')];
+        saveMentions(d);
+        renderMentionRows();
+        showToast('ลบรายการแล้ว', 'success');
+      });
+    });
+  }
+  document.getElementById('supervisorMention').value = data.supervisor || '';
+}
+document.getElementById('addMentionBtn').addEventListener('click', function(){
+  var line = document.getElementById('newMentionLine').value.trim();
+  var handle = document.getElementById('newMentionHandle').value.trim();
+  if(!line || !handle){ showToast('กรอกทั้งชื่อ Line และ Telegram handle', 'error'); return; }
+  var d = loadMentions();
+  d.map[line] = handle;
+  saveMentions(d);
+  document.getElementById('newMentionLine').value = '';
+  document.getElementById('newMentionHandle').value = '';
+  renderMentionRows();
+  showToast('เพิ่มรายการแล้ว', 'success');
+});
+document.getElementById('saveSupervisorBtn').addEventListener('click', function(){
+  var d = loadMentions();
+  d.supervisor = document.getElementById('supervisorMention').value.trim();
+  saveMentions(d);
+  showToast('บันทึกหัวหน้าแล้ว', 'success');
+});
+
+/* Build a mention prefix string like "@หัวหน้าสมชาย @สมหญิง" for a given line/point key.
+   Used by both the Checkpoint tab (direct Telegram send) and the Toridas tab
+   (included as data in the Power Automate payload for the Flow to use in its message). */
+function buildMentionText(lineKey){
+  var d = loadMentions();
+  var parts = [];
+  if(d.supervisor) parts.push(d.supervisor);
+  if(lineKey && d.map[lineKey]) parts.push(d.map[lineKey]);
+  return parts.join(' ');
+}
+
+</script>
+<script>
+(function(){
+  'use strict';
+
+  /* ===================== Config ===================== */
+  var LINE_MACHINES = {
+    'Line 6': ['R-1','R-2','R-3','L-1','L-2','L-3'],
+    'Line 8': ['R-1','R-2','R-3','R-4','L-1','L-2','L-3','L-4'],
+    'Line S6': ['R-1','L-1']
+  };
+  var CHECKPOINTS = ['st3','st4','st5','st6','st7','st8','st9'];
+  var CHECKPOINT_LABELS = {st3:'St.3',st4:'St.4',st5:'St.5',st6:'St.6',st7:'St.7',st8:'St.8',st9:'St.9'};
+  var THRESHOLD_DANGER = 0.10;
+  var THRESHOLD_WARN = 0.05;
+  var GAUGE_VISUAL_MAX = 0.20;
+  var HISTORY_KEY = 'boneQcHistoryV1';
+  var HISTORY_LIMIT = 1000;
+
+  /* ===================== State ===================== */
+  var currentMachines = {};   // { 'R-1': {st3:0,...,st9:0, legsIn:null} }
+  var history = [];           // flat array of saved machine rows
+  var submitting = false;
+
+  /* ===================== Element refs ===================== */
+  var el = {
+    dateInput: document.getElementById('dateInput'),
+    thaiDateHint: document.getElementById('thaiDateHint'),
+    timeInput: document.getElementById('timeInput'),
+    lineSelect: document.getElementById('lineSelect'),
+    shiftSelect: document.getElementById('shiftSelect'),
+    machineGrid: document.getElementById('machineGrid'),
+    machineCountLabel: document.getElementById('machineCountLabel'),
+    sumLegsIn: document.getElementById('sumLegsIn'),
+    sumMiss: document.getElementById('sumMiss'),
+    sumAvg: document.getElementById('sumAvg'),
+    alertBanner: document.getElementById('alertBanner'),
+    alertBannerText: document.getElementById('alertBannerText'),
+    notesInput: document.getElementById('notesInput'),
+    stickyAvg: document.getElementById('stickyAvg'),
+    clearFormBtn: document.getElementById('clearFormBtn'),
+    submitBtn: document.getElementById('submitBtn'),
+    historyToggle: document.getElementById('historyToggle'),
+    historyContent: document.getElementById('historyContent'),
+    historyList: document.getElementById('historyList'),
+    historyCount: document.getElementById('historyCount'),
+    clearHistoryBtn: document.getElementById('clearHistoryBtn')
+  };
+
+  /* ===================== Helpers ===================== */
+  function pad2(n){ return String(n).padStart(2,'0'); }
+
+  function toThaiDateStr(dateObj){
+    var d = pad2(dateObj.getDate());
+    var m = pad2(dateObj.getMonth()+1);
+    var beYear = dateObj.getFullYear() + 543;
+    var yy = String(beYear).slice(-2);
+    return d + '-' + m + '-' + yy;
+  }
+
+  function todayIsoLocal(){
+    var d = new Date();
+    return d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate());
+  }
+
+  function nowTimeLocal(){
+    var d = new Date();
+    return pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+  }
+
+  function fmtPct(rate){
+    return (rate*100).toFixed(1) + '%';
+  }
+
+  function fmtInt(n){
+    return Number(n||0).toLocaleString('th-TH');
+  }
+
+  function tierOf(rate){
+    if(rate > THRESHOLD_DANGER) return 'danger';
+    if(rate > THRESHOLD_WARN) return 'warn';
+    return 'good';
+  }
+
+  function tierColorVar(tier){
+    if(tier==='danger') return 'var(--red)';
+    if(tier==='warn') return 'var(--warn)';
+    return 'var(--green)';
+  }
+
+  /* showToast, getPaUrl, buildMentionText are provided by shared.js */
+
+  /* ===================== Header field init ===================== */
+  function updateThaiDateHint(){
+    if(!el.dateInput.value){ el.thaiDateHint.textContent = '→ พ.ศ. —'; return; }
+    var parts = el.dateInput.value.split('-'); // yyyy-mm-dd
+    var d = new Date(Number(parts[0]), Number(parts[1])-1, Number(parts[2]));
+    el.thaiDateHint.textContent = '→ ' + toThaiDateStr(d) + '  (พ.ศ. ' + (d.getFullYear()+543) + ')';
+  }
+  el.dateInput.addEventListener('change', updateThaiDateHint);
+
+  function initHeaderDefaults(){
+    el.dateInput.value = todayIsoLocal();
+    el.timeInput.value = nowTimeLocal();
+    updateThaiDateHint();
+  }
+
+  [el.lineSelect, el.shiftSelect].forEach(function(sel){
+    sel.addEventListener('change', function(){
+      sel.classList.toggle('placeholder-active', sel.value === '');
+    });
+  });
+
+  /* ===================== Machine rendering ===================== */
+  function machineTemplate(name){
+    var cp = CHECKPOINTS.map(function(key){
+      return '<div class="checkpoint-field">'+
+        '<label>'+CHECKPOINT_LABELS[key]+'</label>'+
+        '<input type="number" min="0" step="1" inputmode="numeric" value="0" '+
+        'data-machine="'+name+'" data-field="'+key+'" aria-label="'+name+' '+CHECKPOINT_LABELS[key]+'">'+
+        '</div>';
+    }).join('');
+
+    return '' +
+      '<div class="machine-card tier-good" data-card="'+name+'">' +
+        '<div class="machine-card-head">' +
+          '<div><div class="machine-name">'+name+'</div><div class="machine-side">'+(name.charAt(0)==='R'?'ฝั่งขวา (Right)':'ฝั่งซ้าย (Left)')+'</div></div>' +
+          '<div class="gauge-ring" data-ring="'+name+'"><span data-ring-text="'+name+'">0.0%</span></div>' +
+        '</div>' +
+        '<div class="legs-in-row">' +
+          '<label>จำนวนขาเข้า</label>' +
+          '<input type="number" min="0" step="1" inputmode="numeric" placeholder="0" data-machine="'+name+'" data-field="legsIn" aria-label="'+name+' จำนวนขาเข้า">' +
+        '</div>' +
+        '<div class="checkpoint-grid">'+cp+'</div>' +
+        '<div class="machine-card-foot">' +
+          '<span>พบกระดูกรวม</span>' +
+          '<strong data-miss-text="'+name+'">0 ขา</strong>' +
+        '</div>' +
+      '</div>';
+  }
+
+  function renderMachines(){
+    var lineName = el.lineSelect.value;
+    var machines = LINE_MACHINES[lineName] || [];
+
+    if(machines.length === 0){
+      el.machineGrid.innerHTML = '<div class="empty-state">กรุณาเลือก Line ด้านบนก่อน<br>ระบบจะแสดงเครื่องทั้งหมดในไลน์นั้นให้กรอกครบทุกเครื่อง</div>';
+      el.machineCountLabel.textContent = '';
+      currentMachines = {};
+      updateSummary();
+      return;
+    }
+
+    currentMachines = {};
+    machines.forEach(function(m){
+      currentMachines[m] = {st3:0,st4:0,st5:0,st6:0,st7:0,st8:0,st9:0,legsIn:null};
+    });
+
+    el.machineGrid.innerHTML = machines.map(machineTemplate).join('');
+    el.machineCountLabel.textContent = machines.length + ' เครื่อง — กรอกให้ครบทุกเครื่อง';
+    updateSummary();
+  }
+
+  el.lineSelect.addEventListener('change', renderMachines);
+
+  /* Delegated input handling for machine fields */
+  el.machineGrid.addEventListener('input', function(e){
+    var t = e.target;
+    var machine = t.getAttribute('data-machine');
+    var field = t.getAttribute('data-field');
+    if(!machine || !field) return;
+
+    if(field === 'legsIn'){
+      var raw = t.value;
+      currentMachines[machine].legsIn = raw === '' ? null : Math.max(0, parseInt(raw,10)||0);
+    } else {
+      var v = Math.max(0, parseInt(t.value,10)||0);
+      currentMachines[machine][field] = v;
+    }
+    updateMachineCard(machine);
+    updateSummary();
+  });
+
+  el.machineGrid.addEventListener('blur', function(e){
+    var t = e.target;
+    if(t.getAttribute && t.getAttribute('data-field') === 'legsIn'){
+      var machine = t.getAttribute('data-machine');
+      t.classList.toggle('input-warn', currentMachines[machine].legsIn === null);
+    }
+  }, true);
+
+  function calcMachine(machine){
+    var m = currentMachines[machine];
+    var missCount = CHECKPOINTS.reduce(function(sum,k){ return sum + (m[k]||0); }, 0);
+    var legsIn = m.legsIn || 0;
+    var missRate = legsIn > 0 ? missCount/legsIn : 0;
+    return {missCount:missCount, legsIn:legsIn, missRate:missRate};
+  }
+
+  function updateMachineCard(machine){
+    var calc = calcMachine(machine);
+    var tier = calc.legsIn > 0 ? tierOf(calc.missRate) : 'good';
+    var card = el.machineGrid.querySelector('[data-card="'+cssEscape(machine)+'"]');
+    if(!card) return;
+    card.className = 'machine-card tier-' + tier;
+
+    var ring = card.querySelector('[data-ring]');
+    var ringText = card.querySelector('[data-ring-text]');
+    var visualPct = Math.min(calc.missRate/GAUGE_VISUAL_MAX,1)*100;
+    ring.style.setProperty('--pct', visualPct + '%');
+    ring.style.setProperty('--ring-color', tierColorVar(tier));
+    ringText.textContent = fmtPct(calc.missRate);
+
+    var missText = card.querySelector('[data-miss-text]');
+    missText.textContent = calc.missCount + ' ขา';
+  }
+
+  function cssEscape(s){
+    return s.replace(/[^a-zA-Z0-9\-]/g, function(c){ return '\\'+c; });
+  }
+
+  /* ===================== Summary ===================== */
+  function computeSummary(){
+    var totalLegsIn = 0, totalMiss = 0, exceeded = [];
+    Object.keys(currentMachines).forEach(function(m){
+      var c = calcMachine(m);
+      totalLegsIn += c.legsIn;
+      totalMiss += c.missCount;
+      if(c.legsIn > 0 && c.missRate > THRESHOLD_DANGER) exceeded.push({machine:m, rate:c.missRate});
+    });
+    var avgRate = totalLegsIn > 0 ? totalMiss/totalLegsIn : 0;
+    return {totalLegsIn:totalLegsIn, totalMiss:totalMiss, avgRate:avgRate, exceeded:exceeded, lineExceeded: totalLegsIn>0 && avgRate > THRESHOLD_DANGER};
+  }
+
+  function updateSummary(){
+    var s = computeSummary();
+    var hasMachines = Object.keys(currentMachines).length > 0;
+
+    el.sumLegsIn.textContent = hasMachines ? fmtInt(s.totalLegsIn) : '—';
+    el.sumMiss.textContent = hasMachines ? fmtInt(s.totalMiss) : '—';
+    el.sumAvg.textContent = hasMachines ? fmtPct(s.avgRate) : '—';
+    el.sumAvg.style.color = hasMachines ? tierColorVar(tierOf(s.avgRate)) : '';
+    el.stickyAvg.textContent = hasMachines ? fmtPct(s.avgRate) : '—';
+    el.stickyAvg.style.color = hasMachines ? tierColorVar(tierOf(s.avgRate)) : '';
+
+    if(hasMachines && (s.exceeded.length > 0 || s.lineExceeded)){
+      el.alertBanner.classList.add('show');
+      var parts = [];
+      if(s.exceeded.length > 0){
+        parts.push('พบ <b>'+s.exceeded.length+' เครื่อง</b> เกิน 10%: ' +
+          s.exceeded.map(function(e){ return e.machine+' ('+fmtPct(e.rate)+')'; }).join(', '));
+      }
+      if(s.lineExceeded){
+        parts.push('เฉลี่ยรวมทั้ง Line เกิน 10% ('+fmtPct(s.avgRate)+')');
+      }
+      el.alertBannerText.innerHTML = parts.join(' • ') + ' — เมื่อกดบันทึก ระบบจะส่งแจ้งเตือน Telegram ให้อัตโนมัติ';
+    } else {
+      el.alertBanner.classList.remove('show');
+    }
+  }
+
+  /* ===================== Validation ===================== */
+  function validateHeader(){
+    var missing = [];
+    if(!el.lineSelect.value) missing.push('Line');
+    if(!el.shiftSelect.value) missing.push('กะ');
+    if(!el.dateInput.value) missing.push('วันที่');
+    if(Object.keys(currentMachines).length === 0) missing.push('ข้อมูลเครื่อง (กรุณาเลือก Line)');
+    return missing;
+  }
+
+  /* ===================== Submit ===================== */
+  function buildPayload(){
+    var s = computeSummary();
+    var dParts = el.dateInput.value.split('-');
+    var dObj = new Date(Number(dParts[0]),Number(dParts[1])-1,Number(dParts[2]));
+    var dateThai = toThaiDateStr(dObj);
+
+    var machines = Object.keys(currentMachines).map(function(m){
+      var c = calcMachine(m);
+      return {
+        machine:m,
+        st3:currentMachines[m].st3, st4:currentMachines[m].st4, st5:currentMachines[m].st5,
+        st6:currentMachines[m].st6, st7:currentMachines[m].st7, st8:currentMachines[m].st8, st9:currentMachines[m].st9,
+        legsIn:c.legsIn, missCount:c.missCount, missRate:c.missRate,
+        exceeded: c.legsIn>0 && c.missRate > THRESHOLD_DANGER
+      };
+    });
+
+    return {
+      dateIso: el.dateInput.value,
+      date: dateThai,
+      time: el.timeInput.value,
+      shift: el.shiftSelect.value,
+      line: el.lineSelect.value,
+      notes: el.notesInput.value.trim(),
+      machines: machines,
+      mentionText: buildMentionText(el.lineSelect.value),
+      summary:{
+        totalLegsIn:s.totalLegsIn, totalMissCount:s.totalMiss,
+        avgMissRate:s.avgRate, lineExceeded:s.lineExceeded,
+        exceededMachines: s.exceeded.map(function(e){return e.machine;})
+      }
+    };
+  }
+
+  function setSubmitLoading(loading){
+    submitting = loading;
+    el.submitBtn.disabled = loading;
+    el.submitBtn.textContent = loading ? 'กำลังบันทึก…' : 'บันทึก';
+  }
+
+  function handleSubmit(){
+    if(submitting) return;
+    var missing = validateHeader();
+    if(missing.length > 0){
+      showToast('กรุณากรอก/เลือกให้ครบ: ' + missing.join(', '), 'error');
+      return;
+    }
+
+    var payload = buildPayload();
+    setSubmitLoading(true);
+
+    // Demo mode: no real network call to Power Automate. Data is saved locally
+    // and any alert condition is simulated so the workflow can be demonstrated
+    // end-to-end without a live backend.
+    setTimeout(function(){
+      saveToHistory(payload, true);
+      if(payload.summary.exceededMachines.length > 0 || payload.summary.lineExceeded){
+        showToast('บันทึกสำเร็จ — ' + payload.line + ' เกิน 10%', 'warning');
+      } else {
+        showToast('บันทึกสำเร็จ', 'success');
+      }
+      resetMachineInputsOnly();
+      setSubmitLoading(false);
+    }, 350);
+  }
+
+  el.submitBtn.addEventListener('click', handleSubmit);
+
+  function resetMachineInputsOnly(){
+    var lineName = el.lineSelect.value;
+    renderMachines();
+    el.lineSelect.value = lineName;
+    el.notesInput.value = '';
+    el.timeInput.value = nowTimeLocal();
+  }
+
+  function clearFullForm(){
+    el.lineSelect.value = '';
+    el.shiftSelect.value = '';
+    [el.lineSelect, el.shiftSelect].forEach(function(s){ s.classList.add('placeholder-active'); });
+    el.notesInput.value = '';
+    initHeaderDefaults();
+    renderMachines();
+    showToast('ล้างฟอร์มแล้ว', 'success');
+  }
+  el.clearFormBtn.addEventListener('click', clearFullForm);
+
+  /* ===================== History (localStorage) ===================== */
+  function loadHistory(){
+    try{
+      var raw = localStorage.getItem(HISTORY_KEY);
+      history = raw ? JSON.parse(raw) : [];
+    }catch(e){ history = []; }
+    renderHistory();
+  }
+
+  function persistHistory(){
+    if(history.length > HISTORY_LIMIT) history = history.slice(history.length - HISTORY_LIMIT);
+    try{ localStorage.setItem(HISTORY_KEY, JSON.stringify(history)); }
+    catch(e){ showToast('พื้นที่จัดเก็บในเครื่องเต็ม กรุณาดาวน์โหลด Excel แล้วล้างประวัติ', 'warning'); }
+  }
+
+  function saveToHistory(payload, submittedOk){
+    var batchId = Date.now() + '-' + Math.random().toString(36).slice(2,8);
+    payload.machines.forEach(function(m){
+      history.push({
+        batchId:batchId,
+        date:payload.date, dateIso:payload.dateIso, time:payload.time,
+        shift:payload.shift, line:payload.line,
+        machine:m.machine,
+        st3:m.st3, st4:m.st4, st5:m.st5, st6:m.st6, st7:m.st7, st8:m.st8, st9:m.st9,
+        legsIn:m.legsIn, missCount:m.missCount, missRate:m.missRate,
+        avgLineRate:payload.summary.avgMissRate, exceeded:m.exceeded,
+        notes:payload.notes, submittedOk:submittedOk
+      });
+    });
+    persistHistory();
+    renderHistory();
+    if(elExport.startDate) refreshExportTab();
+  }
+
+  function renderHistory(){
+    el.historyCount.textContent = 0;
+    if(history.length === 0){
+      el.historyList.innerHTML = '<div class="history-empty">ยังไม่มีประวัติการบันทึกในเครื่องนี้</div>';
+      return;
+    }
+    var batches = {};
+    var order = [];
+    history.forEach(function(row){
+      if(!batches[row.batchId]){ batches[row.batchId]=[]; order.push(row.batchId); }
+      batches[row.batchId].push(row);
+    });
+    order.reverse();
+    el.historyCount.textContent = order.length;
+
+    el.historyList.innerHTML = order.slice(0,100).map(function(bid){
+      var rows = batches[bid];
+      var head = rows[0];
+      var exceededChips = rows.filter(function(r){return r.exceeded;});
+      var okChips = rows.filter(function(r){return !r.exceeded;});
+      var allSent = rows.every(function(r){return r.submittedOk;});
+
+      var chips = exceededChips.map(function(r){
+        return '<span class="hchip danger">'+r.machine+' '+fmtPct(r.missRate)+'</span>';
+      }).concat(okChips.map(function(r){
+        return '<span class="hchip">'+r.machine+' '+fmtPct(r.missRate)+'</span>';
+      })).join('');
+
+      return '' +
+        '<div class="history-batch">' +
+          '<div class="history-batch-head">' +
+            '<span class="htitle">'+head.line+' • '+head.shift+'</span>' +
+            '<span class="hmeta">'+head.date+' '+head.time+'</span>' +
+          '</div>' +
+          '<div class="history-batch-head">' +
+            '<span class="pill '+(head.avgLineRate>THRESHOLD_DANGER?'danger':'good')+'">AVG '+fmtPct(head.avgLineRate)+'</span>' +
+            '<span class="pill '+(allSent?'sent':'failed')+'">'+(allSent?'ส่งสำเร็จ':'ส่งไม่สำเร็จ')+'</span>' +
+          '</div>' +
+          '<div class="history-machines">'+chips+'</div>' +
+        '</div>';
+    }).join('');
+  }
+
+  el.historyToggle.addEventListener('click', function(){
+    el.historyToggle.classList.toggle('open');
+    el.historyContent.classList.toggle('open');
+  });
+
+  el.clearHistoryBtn.addEventListener('click', function(){
+    if(history.length === 0) return;
+    if(confirm('ยืนยันล้างประวัติทั้งหมด '+history.length+' รายการในเครื่องนี้? (แนะนำดาวน์โหลด Excel ก่อน)')){
+      history = [];
+      persistHistory();
+      renderHistory();
+      if(elExport.startDate) refreshExportTab();
+      showToast('ล้างประวัติแล้ว', 'success');
+    }
+  });
+
+  /* ===================== Excel export ===================== */
+  var EXPORT_HEADERS = ['วันที่','เวลา','กะ','Line','เครื่อง',
+    'St.3','St.4','St.5','St.6','St.7','St.8','St.9',
+    'AVG. Miss rate','จำนวนขาเข้า','จำนวนขา Miss rate','AVG','หมายเหตุ'];
+
+  function exportRowsToExcel(rows, fnameSuffix){
+    if(typeof XLSX === 'undefined'){
+      showToast('โหลดไลบรารี Excel ไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่', 'error');
+      return;
+    }
+    if(rows.length === 0){
+      showToast('ไม่พบข้อมูลให้ส่งออกในช่วงที่เลือก', 'warning');
+      return;
+    }
+
+    var dataRows = rows.map(function(h){
+      return [h.date, h.time||'', h.shift, h.line, h.machine,
+        h.st3,h.st4,h.st5,h.st6,h.st7,h.st8,h.st9,
+        h.missRate, h.legsIn, h.missCount, h.avgLineRate, h.notes||''];
+    });
+
+    var ws = XLSX.utils.aoa_to_sheet([EXPORT_HEADERS].concat(dataRows));
+    var range = XLSX.utils.decode_range(ws['!ref']);
+    for(var r=1; r<=range.e.r; r++){
+      [12,15].forEach(function(c){
+        var ref = XLSX.utils.encode_cell({r:r,c:c});
+        if(ws[ref]) ws[ref].z = '0.0%';
+      });
+    }
+    ws['!cols'] = EXPORT_HEADERS.map(function(h,i){ return {wch: i===4?8:i===16?24:11}; });
+
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'MissRate');
+    var fname = 'bone-miss-rate_' + fnameSuffix + '.xlsx';
+    XLSX.writeFile(wb, fname);
+    showToast('ดาวน์โหลด '+fname+' แล้ว', 'success');
+  }
+
+  function filterHistoryByRange(startIso, endIso){
+    return history.filter(function(h){
+      if(startIso && h.dateIso < startIso) return false;
+      if(endIso && h.dateIso > endIso) return false;
+      return true;
+    });
+  }
+
+  var elExport = {
+    startDate: document.getElementById('exportStartDate'),
+    endDate: document.getElementById('exportEndDate'),
+    rangeInfo: document.getElementById('exportRangeInfo'),
+    exportRangeBtn: document.getElementById('exportRangeBtn'),
+    totalCount: document.getElementById('exportTotalCount'),
+    exportAllBtn: document.getElementById('exportAllBtn')
+  };
+
+  function refreshExportTab(){
+    elExport.totalCount.textContent = history.length;
+    var rows = filterHistoryByRange(elExport.startDate.value, elExport.endDate.value);
+    elExport.rangeInfo.textContent = 'พบ ' + rows.length + ' รายการในช่วงที่เลือก';
+  }
+  window.refreshExportTab = refreshExportTab;
+
+  elExport.startDate.addEventListener('change', refreshExportTab);
+  elExport.endDate.addEventListener('change', refreshExportTab);
+
+  elExport.exportRangeBtn.addEventListener('click', function(){
+    var startIso = elExport.startDate.value;
+    var endIso = elExport.endDate.value;
+    var rows = filterHistoryByRange(startIso, endIso);
+    var suffix = (startIso||'เริ่มต้น') + '_ถึง_' + (endIso||'ปัจจุบัน');
+    exportRowsToExcel(rows, suffix);
+  });
+
+  elExport.exportAllBtn.addEventListener('click', function(){
+    exportRowsToExcel(history, 'ทั้งหมด_' + todayIsoLocal());
+  });
+
+  /* ===================== Init ===================== */
+  function initToridas(){
+    initHeaderDefaults();
+    loadHistory();
+    renderMachines();
+    elExport.endDate.value = todayIsoLocal();
+    refreshExportTab();
+  }
+  initToridas();
+
+})();
+
+</script>
+<script>
+
+loadPaSettings();
+renderMentionRows();
+document.getElementById('appVersionText').textContent = APP_VERSION;
+
+</script>
+</body>
+</html>
