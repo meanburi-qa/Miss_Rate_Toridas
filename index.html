@@ -231,6 +231,17 @@ textarea{min-height:64px;resize:vertical;}
 .alert-banner .ic{font-size:16px;flex:none;}
 .alert-banner b{font-family:var(--font-mono);}
 
+.editing-banner{
+  display:none;align-items:center;justify-content:space-between;gap:10px;
+  background:var(--warn-bg);border:1px solid var(--amber);color:var(--amber-dark);
+  border-radius:var(--radius-sm);padding:11px 12px;font-size:13px;line-height:1.5;margin-bottom:14px;
+}
+.editing-banner.show{display:flex;}
+.btn-tiny{padding:6px 11px;font-size:12px;min-height:32px;border-radius:6px;flex:none;}
+.history-actions-row{display:flex;gap:6px;margin-top:9px;}
+.history-actions-row .btn-tiny{flex:1;}
+.btn-danger-outline{background:var(--paper);color:var(--red);border:1.5px solid var(--red);}
+
 /* ---------- Sticky action bar ---------- */
 .sticky-bar{
   position:fixed;left:0;right:0;bottom:0;z-index:40;
@@ -350,6 +361,11 @@ textarea{min-height:64px;resize:vertical;}
 
 <div class="tab-panel active" id="tab-toridas">
 <main class="container">
+
+  <div class="editing-banner" id="editingBanner">
+    <span id="editingBannerText">✎ กำลังแก้ไขข้อมูลที่บันทึกไว้แล้ว — แก้ตัวเลขแล้วกด "บันทึกการแก้ไข" ด้านล่าง</span>
+    <button class="btn btn-outline btn-tiny" id="cancelEditBtn">ยกเลิก</button>
+  </div>
 
   <section class="card">
     <h2>ข้อมูลรอบตรวจ</h2>
@@ -473,7 +489,7 @@ textarea{min-height:64px;resize:vertical;}
 
 <script>
 /* ===================== SHARED (shell-level) ===================== */
-var APP_VERSION = '2026-09-16-export-tab';
+var APP_VERSION = '2026-09-17-edit-history';
 var SHARED_SETTINGS_KEY = 'qcSharedPaUrlV1';
 var DEFAULT_PA_URL = 'https://default8c308e1514804168aed7b0f7a13520.95.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/c38072771cf945b48ea93c93dc352515/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=HwR56PJW4EEXVhlhu6GOeobdb_2xilW6pRyy-QENmzw';
 
@@ -624,6 +640,7 @@ function buildMentionText(lineKey){
   var currentMachines = {};   // { 'R-1': {st3:0,...,st9:0, legsIn:null} }
   var history = [];           // flat array of saved machine rows
   var submitting = false;
+  var editingBatchId = null;  // batchId currently loaded for editing, or null
 
   /* ===================== Element refs ===================== */
   var el = {
@@ -647,7 +664,10 @@ function buildMentionText(lineKey){
     historyContent: document.getElementById('historyContent'),
     historyList: document.getElementById('historyList'),
     historyCount: document.getElementById('historyCount'),
-    clearHistoryBtn: document.getElementById('clearHistoryBtn')
+    clearHistoryBtn: document.getElementById('clearHistoryBtn'),
+    editingBanner: document.getElementById('editingBanner'),
+    editingBannerText: document.getElementById('editingBannerText'),
+    cancelEditBtn: document.getElementById('cancelEditBtn')
   };
 
   /* ===================== Helpers ===================== */
@@ -923,17 +943,24 @@ function buildMentionText(lineKey){
 
     var payload = buildPayload();
     setSubmitLoading(true);
+    var isEditing = !!editingBatchId;
+    var targetBatchId = editingBatchId;
 
     // Demo mode: no real network call to Power Automate. Data is saved locally
     // and any alert condition is simulated so the workflow can be demonstrated
     // end-to-end without a live backend.
     setTimeout(function(){
-      saveToHistory(payload, true);
-      if(payload.summary.exceededMachines.length > 0 || payload.summary.lineExceeded){
-        showToast('บันทึกสำเร็จ — ' + payload.line + ' เกิน 10%', 'warning');
-      } else {
-        showToast('บันทึกสำเร็จ', 'success');
+      if(isEditing){
+        history = history.filter(function(r){ return r.batchId !== targetBatchId; });
       }
+      saveToHistory(payload, true, isEditing ? targetBatchId : null);
+      var savedLabel = isEditing ? 'บันทึกการแก้ไขสำเร็จ' : 'บันทึกสำเร็จ';
+      if(payload.summary.exceededMachines.length > 0 || payload.summary.lineExceeded){
+        showToast(savedLabel + ' — ' + payload.line + ' เกิน 10%', 'warning');
+      } else {
+        showToast(savedLabel, 'success');
+      }
+      if(isEditing) exitEditMode();
       resetMachineInputsOnly();
       setSubmitLoading(false);
     }, 350);
@@ -949,16 +976,17 @@ function buildMentionText(lineKey){
     el.timeInput.value = nowTimeLocal();
   }
 
-  function clearFullForm(){
+  function clearFullForm(silent){
     el.lineSelect.value = '';
     el.shiftSelect.value = '';
     [el.lineSelect, el.shiftSelect].forEach(function(s){ s.classList.add('placeholder-active'); });
     el.notesInput.value = '';
     initHeaderDefaults();
     renderMachines();
-    showToast('ล้างฟอร์มแล้ว', 'success');
+    if(editingBatchId) exitEditMode();
+    if(!silent) showToast('ล้างฟอร์มแล้ว', 'success');
   }
-  el.clearFormBtn.addEventListener('click', clearFullForm);
+  el.clearFormBtn.addEventListener('click', function(){ clearFullForm(false); });
 
   /* ===================== History (localStorage) ===================== */
   function loadHistory(){
@@ -975,8 +1003,8 @@ function buildMentionText(lineKey){
     catch(e){ showToast('พื้นที่จัดเก็บในเครื่องเต็ม กรุณาดาวน์โหลด Excel แล้วล้างประวัติ', 'warning'); }
   }
 
-  function saveToHistory(payload, submittedOk){
-    var batchId = Date.now() + '-' + Math.random().toString(36).slice(2,8);
+  function saveToHistory(payload, submittedOk, forceBatchId){
+    var batchId = forceBatchId || (Date.now() + '-' + Math.random().toString(36).slice(2,8));
     payload.machines.forEach(function(m){
       history.push({
         batchId:batchId,
@@ -1023,7 +1051,7 @@ function buildMentionText(lineKey){
       })).join('');
 
       return '' +
-        '<div class="history-batch">' +
+        '<div class="history-batch" data-batch-id="'+bid+'">' +
           '<div class="history-batch-head">' +
             '<span class="htitle">'+head.line+' • '+head.shift+'</span>' +
             '<span class="hmeta">'+head.date+' '+head.time+'</span>' +
@@ -1033,9 +1061,86 @@ function buildMentionText(lineKey){
             '<span class="pill '+(allSent?'sent':'failed')+'">'+(allSent?'ส่งสำเร็จ':'ส่งไม่สำเร็จ')+'</span>' +
           '</div>' +
           '<div class="history-machines">'+chips+'</div>' +
+          '<div class="history-actions-row">' +
+            '<button class="btn btn-outline btn-tiny" data-edit-batch="'+bid+'">✎ แก้ไข</button>' +
+            '<button class="btn btn-danger-outline btn-tiny" data-delete-batch="'+bid+'">🗑 ลบ</button>' +
+          '</div>' +
         '</div>';
     }).join('');
   }
+
+  /* ---------- Edit / delete a saved batch ---------- */
+  function loadBatchIntoForm(batchId){
+    var rows = history.filter(function(r){ return r.batchId === batchId; });
+    if(rows.length === 0) return;
+    var head = rows[0];
+
+    el.dateInput.value = head.dateIso;
+    updateThaiDateHint();
+    el.timeInput.value = head.time;
+    el.shiftSelect.value = head.shift;
+    el.lineSelect.value = head.line;
+    [el.lineSelect, el.shiftSelect].forEach(function(s){ s.classList.remove('placeholder-active'); });
+    el.notesInput.value = head.notes || '';
+
+    renderMachines();
+
+    rows.forEach(function(r){
+      if(!currentMachines[r.machine]) return;
+      currentMachines[r.machine] = {st3:r.st3,st4:r.st4,st5:r.st5,st6:r.st6,st7:r.st7,st8:r.st8,st9:r.st9,legsIn:r.legsIn};
+      CHECKPOINTS.forEach(function(k){
+        var inp = el.machineGrid.querySelector('input[data-machine="'+cssEscape(r.machine)+'"][data-field="'+k+'"]');
+        if(inp) inp.value = r[k];
+      });
+      var legsInp = el.machineGrid.querySelector('input[data-machine="'+cssEscape(r.machine)+'"][data-field="legsIn"]');
+      if(legsInp) legsInp.value = r.legsIn === null ? '' : r.legsIn;
+      updateMachineCard(r.machine);
+    });
+    updateSummary();
+
+    editingBatchId = batchId;
+    el.submitBtn.textContent = 'บันทึกการแก้ไข';
+    el.editingBanner.classList.add('show');
+
+    var toridasTabBtn = document.querySelector('.tab-btn[data-tab="tab-toridas"]');
+    if(toridasTabBtn) toridasTabBtn.click();
+    el.historyContent.classList.remove('open');
+    el.historyToggle.classList.remove('open');
+    window.scrollTo({top:0, behavior:'smooth'});
+    showToast('โหลดข้อมูลชุดนี้มาแก้ไขแล้ว แก้ตัวเลขแล้วกด "บันทึกการแก้ไข"', 'success');
+  }
+
+  function exitEditMode(){
+    editingBatchId = null;
+    el.submitBtn.textContent = 'บันทึก';
+    el.editingBanner.classList.remove('show');
+  }
+
+  el.cancelEditBtn.addEventListener('click', function(){
+    exitEditMode();
+    clearFullForm(true);
+    showToast('ยกเลิกการแก้ไขแล้ว', 'success');
+  });
+
+  el.historyList.addEventListener('click', function(e){
+    var editBtn = e.target.closest('[data-edit-batch]');
+    if(editBtn){
+      loadBatchIntoForm(editBtn.getAttribute('data-edit-batch'));
+      return;
+    }
+    var delBtn = e.target.closest('[data-delete-batch]');
+    if(delBtn){
+      var bid = delBtn.getAttribute('data-delete-batch');
+      if(confirm('ยืนยันลบข้อมูลชุดนี้? การลบนี้ไม่สามารถย้อนกลับได้')){
+        history = history.filter(function(r){ return r.batchId !== bid; });
+        persistHistory();
+        renderHistory();
+        if(elExport.startDate) refreshExportTab();
+        if(editingBatchId === bid) exitEditMode();
+        showToast('ลบข้อมูลชุดนี้แล้ว', 'success');
+      }
+    }
+  });
 
   el.historyToggle.addEventListener('click', function(){
     el.historyToggle.classList.toggle('open');
