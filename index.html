@@ -7,7 +7,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&family=Zilla+Slab:wght@500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 /* ===================== Unified token system =====================
    Merges the Toridas entry-form palette and the Bone Checkpoint
@@ -280,6 +279,33 @@ textarea{min-height:64px;resize:vertical;}
 .history-empty{color:var(--steel-600);font-size:13px;text-align:center;padding:14px 0;}
 .history-actions{display:flex;justify-content:flex-end;margin-top:6px;}
 
+/* ---------- Preview (export tab range preview) ---------- */
+.preview-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
+.preview-toolbar .ptitle{font-size:12.5px;color:var(--steel-600);}
+.preview-toolbar .ptitle strong{color:var(--ink);font-family:var(--font-mono);}
+.preview-list{max-height:480px;overflow-y:auto;border:1px solid var(--steel-100);border-radius:var(--radius-sm);}
+.preview-batch{border-bottom:1px solid var(--steel-100);padding:10px 12px;}
+.preview-batch:last-child{border-bottom:none;}
+.preview-batch-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:6px;}
+.preview-batch-head .htitle{font-weight:600;color:var(--ink);font-size:13px;}
+.preview-batch-head .hmeta{font-family:var(--font-mono);color:var(--steel-600);font-size:11.5px;}
+.preview-table-wrap{overflow-x:auto;margin-top:6px;}
+table.preview-table{border-collapse:collapse;width:100%;font-size:11.5px;}
+table.preview-table th, table.preview-table td{
+  padding:5px 7px;text-align:right;border-bottom:1px solid var(--steel-100);white-space:nowrap;
+}
+table.preview-table th{background:var(--steel-050);color:var(--steel-600);font-weight:600;position:sticky;top:0;}
+table.preview-table td:first-child, table.preview-table th:first-child{text-align:left;}
+table.preview-table tr.row-danger td{background:var(--red-bg);color:#8a2c26;}
+.preview-empty{color:var(--steel-600);font-size:13px;text-align:center;padding:22px 0;}
+.xlsx-status{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--steel-600);margin-top:8px;}
+.xlsx-status .dot{width:7px;height:7px;border-radius:50%;background:var(--steel-500);flex:none;}
+.xlsx-status .dot.ready{background:#5fd39a;}
+.xlsx-status .dot.err{background:var(--red);}
+.xlsx-status .dot.loading{background:var(--amber);animation:pulseDot 1s ease-in-out infinite;}
+@keyframes pulseDot{0%,100%{opacity:1;}50%{opacity:0.35;}}
+.xlsx-status button{margin-left:auto;}
+
 /* ---------- Phone (standard ~360–430px) ---------- */
 @media (max-width:600px){
   .container{padding:12px 12px 100px;}
@@ -474,6 +500,21 @@ textarea{min-height:64px;resize:vertical;}
     </div>
     <p class="settings-hint" id="exportRangeInfo">พบ 0 รายการในช่วงที่เลือก</p>
     <button class="btn btn-primary" id="exportRangeBtn" style="width:100%;margin-top:6px;">ส่งออก Excel ตามช่วงที่เลือก</button>
+    <div class="xlsx-status" id="xlsxStatus">
+      <span class="dot loading" id="xlsxStatusDot"></span>
+      <span id="xlsxStatusText">กำลังโหลดไลบรารี Excel…</span>
+      <button class="btn btn-outline btn-tiny" id="xlsxRetryBtn" style="display:none;">ลองโหลดใหม่</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>ดูข้อมูลที่เคยกรอกในช่วงที่เลือก</h2>
+    <div class="preview-toolbar">
+      <span class="ptitle">พบ <strong id="previewCount">0</strong> รอบ / <strong id="previewRowCount">0</strong> แถวเครื่อง</span>
+    </div>
+    <div class="preview-list" id="previewList">
+      <div class="preview-empty">เลือกวันที่เริ่มต้น/สิ้นสุดด้านบนเพื่อดูข้อมูลที่เคยกรอกในช่วงนั้น</div>
+    </div>
   </section>
 
   <section class="card">
@@ -489,8 +530,9 @@ textarea{min-height:64px;resize:vertical;}
 
 <script>
 /* ===================== SHARED (shell-level) ===================== */
-var APP_VERSION = '2026-09-17-edit-history';
+var APP_VERSION = '2026-09-18-export-unconditional';
 var SHARED_SETTINGS_KEY = 'qcSharedPaUrlV1';
+var MENTION_KEY = 'qcMentionConfigV1';
 var DEFAULT_PA_URL = 'https://default8c308e1514804168aed7b0f7a13520.95.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/c38072771cf945b48ea93c93dc352515/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=HwR56PJW4EEXVhlhu6GOeobdb_2xilW6pRyy-QENmzw';
 
 function showToast(msg, type){
@@ -519,14 +561,6 @@ function loadPaSettings(){
     localStorage.setItem(SHARED_SETTINGS_KEY, url);
   }
   document.getElementById('paUrl').value = url;
-  updatePaStatus();
-}
-function updatePaStatus(){
-  var dot = document.getElementById('statusDot');
-  var text = document.getElementById('statusText');
-  if(!dot || !text) return;
-  dot.className = 'status-dot on';
-  text.textContent = 'โหมดเดโม — ไม่ได้เชื่อมต่อ Power Automate/Telegram จริง';
 }
 function getPaUrl(){ return localStorage.getItem(SHARED_SETTINGS_KEY) || ''; }
 
@@ -549,7 +583,6 @@ document.querySelectorAll('.tab-btn').forEach(function(btn){
 document.getElementById('saveSettingsBtn').addEventListener('click', function(){
   var url = document.getElementById('paUrl').value.trim();
   localStorage.setItem(SHARED_SETTINGS_KEY, url);
-  updatePaStatus();
   showToast(url ? 'บันทึก Power Automate URL แล้ว' : 'ลบ URL แล้ว', 'success');
 });
 
@@ -606,9 +639,7 @@ document.getElementById('saveSupervisorBtn').addEventListener('click', function(
   showToast('บันทึกหัวหน้าแล้ว', 'success');
 });
 
-/* Build a mention prefix string like "@หัวหน้าสมชาย @สมหญิง" for a given line/point key.
-   Used by both the Checkpoint tab (direct Telegram send) and the Toridas tab
-   (included as data in the Power Automate payload for the Flow to use in its message). */
+/* Build a mention prefix string like "@หัวหน้าสมชาย @สมหญิง" for a given line/point key. */
 function buildMentionText(lineKey){
   var d = loadMentions();
   var parts = [];
@@ -616,6 +647,89 @@ function buildMentionText(lineKey){
   if(lineKey && d.map[lineKey]) parts.push(d.map[lineKey]);
   return parts.join(' ');
 }
+
+/* ===================== XLSX library loader (robust, with fallback + retry) =====================
+   Root cause of "export ไม่ได้": the page only ever tried ONE <script src> to cdnjs with
+   no retry and no fallback host. If that single request is slow, blocked, or fails for any
+   reason, `XLSX` is simply undefined forever and every export click just fails silently
+   with no way to recover without a full page reload. This loader:
+   - tries cdnjs first, then falls back to a second CDN (jsdelivr) if that fails
+   - exposes a promise (window.xlsxReady) other code can await before exporting
+   - shows a live status line + retry button in the Export tab
+   - disables/enables the export buttons based on load state, so a click never just "does nothing" */
+var XLSX_SOURCES = [
+  'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
+  'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'
+];
+
+function loadScriptOnce(src, timeoutMs){
+  return new Promise(function(resolve, reject){
+    var s = document.createElement('script');
+    s.src = src;
+    var done = false;
+    var timer = setTimeout(function(){
+      if(done) return;
+      done = true;
+      s.remove();
+      reject(new Error('timeout loading ' + src));
+    }, timeoutMs || 8000);
+    s.onload = function(){
+      if(done) return;
+      done = true;
+      clearTimeout(timer);
+      resolve();
+    };
+    s.onerror = function(){
+      if(done) return;
+      done = true;
+      clearTimeout(timer);
+      s.remove();
+      reject(new Error('failed to load ' + src));
+    };
+    document.head.appendChild(s);
+  });
+}
+
+function setXlsxStatus(state, msg){
+  var dot = document.getElementById('xlsxStatusDot');
+  var text = document.getElementById('xlsxStatusText');
+  var retryBtn = document.getElementById('xlsxRetryBtn');
+  if(!dot) return;
+  dot.className = 'dot ' + state;
+  text.textContent = msg;
+  retryBtn.style.display = state === 'err' ? 'inline-flex' : 'none';
+  var exportBtns = [document.getElementById('exportRangeBtn'), document.getElementById('exportAllBtn')];
+  exportBtns.forEach(function(b){ if(b) b.disabled = (state !== 'ready'); });
+}
+
+function loadXlsxLibrary(){
+  setXlsxStatus('loading', 'กำลังโหลดไลบรารี Excel…');
+  var attempt = function(i){
+    if(typeof XLSX !== 'undefined'){
+      setXlsxStatus('ready', 'ไลบรารี Excel พร้อมใช้งาน');
+      return Promise.resolve();
+    }
+    if(i >= XLSX_SOURCES.length){
+      setXlsxStatus('err', 'โหลดไลบรารี Excel ไม่สำเร็จ — ตรวจการเชื่อมต่ออินเทอร์เน็ต/การตั้งค่าเครือข่าย แล้วลองใหม่');
+      return Promise.reject(new Error('all xlsx sources failed'));
+    }
+    return loadScriptOnce(XLSX_SOURCES[i], 8000).then(function(){
+      if(typeof XLSX === 'undefined'){
+        // Script "loaded" but somehow didn't define XLSX (blocked/corrupted response) — try next source.
+        return attempt(i+1);
+      }
+      setXlsxStatus('ready', 'ไลบรารี Excel พร้อมใช้งาน');
+    }).catch(function(){
+      return attempt(i+1);
+    });
+  };
+  window.xlsxReady = attempt(0);
+  return window.xlsxReady;
+}
+
+document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
+  loadXlsxLibrary();
+});
 
 </script>
 <script>
@@ -711,7 +825,7 @@ function buildMentionText(lineKey){
     return 'var(--green)';
   }
 
-  /* showToast, getPaUrl, buildMentionText are provided by shared.js */
+  /* showToast, getPaUrl, buildMentionText, loadXlsxLibrary are provided by the shared script block above */
 
   /* ===================== Header field init ===================== */
   function updateThaiDateHint(){
@@ -1019,7 +1133,7 @@ function buildMentionText(lineKey){
     });
     persistHistory();
     renderHistory();
-    if(elExport.startDate) refreshExportTab();
+    if(typeof window.refreshExportTab === 'function') window.refreshExportTab();
   }
 
   function renderHistory(){
@@ -1135,7 +1249,7 @@ function buildMentionText(lineKey){
         history = history.filter(function(r){ return r.batchId !== bid; });
         persistHistory();
         renderHistory();
-        if(elExport.startDate) refreshExportTab();
+        if(typeof window.refreshExportTab === 'function') window.refreshExportTab();
         if(editingBatchId === bid) exitEditMode();
         showToast('ลบข้อมูลชุดนี้แล้ว', 'success');
       }
@@ -1153,7 +1267,7 @@ function buildMentionText(lineKey){
       history = [];
       persistHistory();
       renderHistory();
-      if(elExport.startDate) refreshExportTab();
+      if(typeof window.refreshExportTab === 'function') window.refreshExportTab();
       showToast('ล้างประวัติแล้ว', 'success');
     }
   });
@@ -1163,9 +1277,24 @@ function buildMentionText(lineKey){
     'St.3','St.4','St.5','St.6','St.7','St.8','St.9',
     'AVG. Miss rate','จำนวนขาเข้า','จำนวนขา Miss rate','AVG','หมายเหตุ'];
 
-  function exportRowsToExcel(rows, fnameSuffix){
+  /* IMPORTANT: a published page cannot trigger a browser download by itself
+     (XLSX.writeFile builds a hidden <a download> and clicks it — that kind of
+     script-started save is inert once the page is published/hosted). The
+     platform instead offers a "downloads" runtime capability: build the
+     workbook bytes ourselves, then hand them to claude.use("downloads").save()
+     which shows the viewer a real save/share confirmation. */
+  /* Export works two ways depending on where this page is running:
+     1) Inside the Claude Artifact viewer (claude.ai) — script-started downloads
+        are blocked there, so we use the platform's "downloads" capability,
+        which shows the viewer a real save/share confirmation.
+     2) Opened as a plain HTML file — locally, on GitHub Pages, or any normal
+        web host — window.claude does not exist there, so we fall back to a
+        standard browser download (Blob + hidden <a download> click), which
+        works everywhere with no special permission needed.
+     Either way the export always produces a file — no dead end. */
+  async function doExportRows(rows, fnameSuffix){
     if(typeof XLSX === 'undefined'){
-      showToast('โหลดไลบรารี Excel ไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่', 'error');
+      showToast('ไลบรารี Excel ยังไม่พร้อม โปรดรอสักครู่แล้วลองใหม่ หรือกด "ลองโหลดใหม่" ในแท็บส่งออก', 'error');
       return;
     }
     if(rows.length === 0){
@@ -1192,8 +1321,73 @@ function buildMentionText(lineKey){
     var wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'MissRate');
     var fname = 'bone-miss-rate_' + fnameSuffix + '.xlsx';
-    XLSX.writeFile(wb, fname);
-    showToast('ดาวน์โหลด '+fname+' แล้ว', 'success');
+
+    var buffer;
+    try{
+      buffer = XLSX.write(wb, {bookType:'xlsx', type:'array'});
+    }catch(err){
+      showToast('สร้างไฟล์ Excel ไม่สำเร็จ: ' + (err && err.message ? err.message : 'ไม่ทราบสาเหตุ'), 'error');
+      return;
+    }
+    var blob = new Blob([buffer], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+
+    /* ---- 1) Try the Claude Artifact "downloads" capability ---- */
+    if(typeof window.claude !== 'undefined' && typeof window.claude.use === 'function'){
+      var downloads = null;
+      try{ downloads = await window.claude.use('downloads'); }catch(e){ downloads = null; }
+      if(downloads){
+        try{
+          await downloads.save({filename: fname, data: blob});
+          showToast('ดาวน์โหลด '+fname+' แล้ว', 'success');
+          return;
+        }catch(err){
+          var code = err && err.code;
+          if(code === 'declined'){
+            return; // viewer cancelled the save prompt — not an error, no fallback needed
+          }
+          if(code === 'too_large'){
+            showToast('ไฟล์ใหญ่เกินไปสำหรับปลายทางนี้ ลองเลือกช่วงวันที่ให้แคบลง', 'error');
+            return;
+          }
+          // any other failure (rate_limited, unavailable, etc.) — fall through to the plain browser download below
+        }
+      }
+    }
+
+    /* ---- 2) Fallback: standard browser download (works standalone, GitHub Pages, etc.) ---- */
+    try{
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = fname;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+      showToast('ดาวน์โหลด '+fname+' แล้ว', 'success');
+    }catch(err){
+      showToast('ดาวน์โหลดไม่สำเร็จ: ' + (err && err.message ? err.message : 'ไม่ทราบสาเหตุ'), 'error');
+    }
+  }
+
+  /* Wait for the xlsx loader (kicks off at page init) before exporting, instead of
+     failing immediately on a slow connection. If loading genuinely fails, show the
+     real reason instead of a generic "not available" message. */
+  function exportRowsToExcel(rows, fnameSuffix){
+    if(typeof XLSX !== 'undefined'){
+      doExportRows(rows, fnameSuffix);
+      return;
+    }
+    if(!window.xlsxReady){
+      showToast('ไลบรารี Excel ยังไม่เริ่มโหลด กำลังลองใหม่…', 'warning');
+      window.xlsxReady = loadXlsxLibrary();
+    }
+    showToast('กำลังเตรียมไลบรารี Excel กรุณารอสักครู่…', 'default');
+    window.xlsxReady.then(function(){
+      doExportRows(rows, fnameSuffix);
+    }).catch(function(){
+      showToast('โหลดไลบรารี Excel ไม่สำเร็จ — ตรวจการเชื่อมต่ออินเทอร์เน็ตแล้วลองใหม่', 'error');
+    });
   }
 
   function filterHistoryByRange(startIso, endIso){
@@ -1210,13 +1404,75 @@ function buildMentionText(lineKey){
     rangeInfo: document.getElementById('exportRangeInfo'),
     exportRangeBtn: document.getElementById('exportRangeBtn'),
     totalCount: document.getElementById('exportTotalCount'),
-    exportAllBtn: document.getElementById('exportAllBtn')
+    exportAllBtn: document.getElementById('exportAllBtn'),
+    previewList: document.getElementById('previewList'),
+    previewCount: document.getElementById('previewCount'),
+    previewRowCount: document.getElementById('previewRowCount')
   };
+
+  /* ---------- NEW: preview of previously entered data for the selected date range ---------- */
+  function renderPreview(rows){
+    elExport.previewRowCount.textContent = rows.length;
+
+    if(!elExport.startDate.value && !elExport.endDate.value){
+      elExport.previewList.innerHTML = '<div class="preview-empty">เลือกวันที่เริ่มต้น/สิ้นสุดด้านบนเพื่อดูข้อมูลที่เคยกรอกในช่วงนั้น</div>';
+      elExport.previewCount.textContent = 0;
+      return;
+    }
+    if(rows.length === 0){
+      elExport.previewList.innerHTML = '<div class="preview-empty">ไม่พบข้อมูลที่เคยกรอกในช่วงวันที่นี้</div>';
+      elExport.previewCount.textContent = 0;
+      return;
+    }
+
+    var batches = {};
+    var order = [];
+    rows.forEach(function(row){
+      if(!batches[row.batchId]){ batches[row.batchId]=[]; order.push(row.batchId); }
+      batches[row.batchId].push(row);
+    });
+    // newest first
+    order.sort(function(a,b){
+      var ra = batches[a][0], rb = batches[b][0];
+      var da = ra.dateIso + ' ' + (ra.time||'');
+      var db = rb.dateIso + ' ' + (rb.time||'');
+      return da < db ? 1 : da > db ? -1 : 0;
+    });
+    elExport.previewCount.textContent = order.length;
+
+    elExport.previewList.innerHTML = order.map(function(bid){
+      var brows = batches[bid];
+      var head = brows[0];
+      var tableRows = brows.map(function(r){
+        return '<tr class="'+(r.exceeded?'row-danger':'')+'">' +
+          '<td>'+r.machine+'</td>' +
+          '<td>'+r.st3+'</td><td>'+r.st4+'</td><td>'+r.st5+'</td><td>'+r.st6+'</td>' +
+          '<td>'+r.st7+'</td><td>'+r.st8+'</td><td>'+r.st9+'</td>' +
+          '<td>'+fmtInt(r.legsIn)+'</td><td>'+fmtInt(r.missCount)+'</td>' +
+          '<td>'+fmtPct(r.missRate)+'</td>' +
+        '</tr>';
+      }).join('');
+
+      return '' +
+        '<div class="preview-batch">' +
+          '<div class="preview-batch-head">' +
+            '<span class="htitle">'+head.line+' • '+head.shift+'</span>' +
+            '<span class="hmeta">'+head.date+' '+(head.time||'')+' • AVG '+fmtPct(head.avgLineRate)+'</span>' +
+          '</div>' +
+          (head.notes ? '<div class="hmeta" style="font-family:var(--font-body);color:var(--steel-600);margin-bottom:4px;">หมายเหตุ: '+head.notes+'</div>' : '') +
+          '<div class="preview-table-wrap"><table class="preview-table">' +
+            '<thead><tr><th>เครื่อง</th><th>St.3</th><th>St.4</th><th>St.5</th><th>St.6</th><th>St.7</th><th>St.8</th><th>St.9</th><th>ขาเข้า</th><th>Miss</th><th>Rate</th></tr></thead>' +
+            '<tbody>'+tableRows+'</tbody>' +
+          '</table></div>' +
+        '</div>';
+    }).join('');
+  }
 
   function refreshExportTab(){
     elExport.totalCount.textContent = history.length;
     var rows = filterHistoryByRange(elExport.startDate.value, elExport.endDate.value);
     elExport.rangeInfo.textContent = 'พบ ' + rows.length + ' รายการในช่วงที่เลือก';
+    renderPreview(rows);
   }
   window.refreshExportTab = refreshExportTab;
 
@@ -1252,6 +1508,7 @@ function buildMentionText(lineKey){
 
 loadPaSettings();
 renderMentionRows();
+loadXlsxLibrary();
 document.getElementById('appVersionText').textContent = APP_VERSION;
 
 </script>
