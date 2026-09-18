@@ -119,7 +119,7 @@ button, select, input, textarea{font-family:inherit;}
 
 /* ---------- Settings panel (shared) ---------- */
 .settings-panel{max-width:1180px;margin:0 auto;padding:0 16px;overflow:hidden;max-height:0;transition:max-height .25s ease;}
-.settings-panel.open{max-height:900px;}
+.settings-panel.open{max-height:2000px;}
 .settings-inner{background:var(--paper);border:1px solid var(--steel-100);border-radius:var(--radius);padding:16px;margin-top:14px;box-shadow:var(--shadow);}
 .settings-inner h3{font-family:var(--font-display);font-size:14.5px;margin:0 0 10px;color:var(--steel-900);}
 .settings-inner h3:not(:first-child){margin-top:20px;padding-top:16px;border-top:1px dashed var(--steel-100);}
@@ -127,12 +127,15 @@ button, select, input, textarea{font-family:inherit;}
 .settings-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;}
 .settings-row input{flex:1;min-width:180px;}
 .settings-hint{font-size:11.5px;color:var(--steel-600);margin:8px 0 0;line-height:1.6;}
+.hint-ok{color:var(--green);font-weight:600;}
+.hint-err{color:var(--red);font-weight:600;}
+.hint-warn{color:var(--amber-dark);font-weight:600;}
 .mention-row{display:grid;grid-template-columns:1fr 1fr auto;gap:6px;margin-bottom:6px;}
 .mention-row input{width:100%;}
 #appVersionText{font-family:var(--font-mono);color:var(--steel-900);}
 
 /* ---------- Generic form controls (shared look) ---------- */
-input[type="date"],input[type="time"],select,textarea,input[type="number"],input[type="text"],input[type="url"]{
+input[type="date"],input[type="time"],select,textarea,input[type="number"],input[type="text"],input[type="url"],input[type="password"]{
   border:1.5px solid var(--steel-300);border-radius:var(--radius-sm);padding:11px 12px;font-size:16px;
   color:var(--steel-900);background:var(--paper);width:100%;transition:border-color .15s ease;
   min-height:44px;box-sizing:border-box;
@@ -165,6 +168,14 @@ select{appearance:none;-webkit-appearance:none;
 @keyframes slideDown{from{opacity:0;transform:translateY(-10px);}to{opacity:1;transform:translateY(0);}}
 
 @media (prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important;}}
+
+/* ---------- Notice bars (GitHub sync status) ---------- */
+.notice{display:none;margin-top:12px;padding:10px 12px;border-radius:var(--radius-sm);font-size:12.5px;line-height:1.6;
+  border:1px solid var(--steel-100);background:var(--steel-050);color:var(--steel-700);}
+.notice.show{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.notice.warn{background:var(--warn-bg);border-color:var(--amber);color:var(--amber-dark);}
+.notice.err{background:var(--red-bg);border-color:var(--red);color:#8a2c26;}
+.notice.ok{background:var(--green-bg);border-color:var(--green);color:var(--green);}
 
 /* ---------- Toridas layout ---------- */
 .container{max-width:880px;margin:0 auto;padding:16px 16px 96px;}
@@ -334,6 +345,37 @@ table.preview-table tr.row-danger td{background:var(--red-bg);color:#8a2c26;}
   .summary-stats{grid-template-columns:repeat(3,1fr);}
 }
 
+/* ---------- Dark mode ----------
+   Off by default (the app always renders light, regardless of the
+   device/browser's own dark-mode setting) — only turns on if something
+   explicitly sets <html data-theme="dark">, which nothing in this page
+   does yet. */
+:root[data-theme="dark"]{
+  --steel-950:#05080a;
+  --steel-900:#0d1215;
+  --steel-800:#161d21;
+  --steel-700:#232c31;
+  --steel-600:#8b9aa0;
+  --steel-500:#6a7a80;
+  --steel-300:#3a474e;
+  --steel-100:#232e31;
+  --steel-050:#12181b;
+  --steel-50:#161e21;
+  --steel-200:#2c3a3e;
+  --paper:#111719;
+  --amber-bg:#2c2210;
+  --red-bg:#2c1512;
+  --green-bg:#122720;
+  --warn-bg:#2c2110;
+  --ink:#eef2f2;
+  --ink-light:#c7d3d5;
+}
+:root[data-theme="dark"] body{color:var(--steel-100);background:var(--steel-050);}
+:root[data-theme="dark"] .card h2,
+:root[data-theme="dark"] .machine-name,
+:root[data-theme="dark"] .brand-titles h1,
+:root[data-theme="dark"] .settings-inner h3{color:var(--steel-100);}
+
 </style>
 </head>
 <body>
@@ -356,13 +398,25 @@ table.preview-table tr.row-danger td{background:var(--red-bg);color:#8a2c26;}
 
 <div class="settings-panel" id="settingsPanel">
   <div class="settings-inner">
-    <h3>Power Automate (Toridas)</h3>
-    <label for="paUrl">Flow URL (HTTP Trigger)</label>
+    <h3>GitHub — ที่เก็บข้อมูลกลาง</h3>
+    <label for="ghRepo">Repo เก็บข้อมูล (รูปแบบ owner/repo)</label>
     <div class="settings-row">
-      <input type="url" id="paUrl" placeholder="https://prod-xx.xxx.logic.azure.com/workflows/...">
-      <button class="btn btn-primary btn-small" id="saveSettingsBtn">บันทึก URL</button>
+      <input type="text" id="ghRepo" placeholder="meanburi-qa/qc-data" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
     </div>
-    <p class="settings-hint">⚠ ปิดใช้งานชั่วคราว (โหมดเดโม) — ตอนนี้ข้อมูล Toridas บันทึกในเครื่องเท่านั้น ยังไม่ส่งไป Power Automate จริง เก็บช่องนี้ไว้เผื่อกลับมาเปิดใช้งานจริงทีหลัง</p>
+    <label for="ghBranch">Branch</label>
+    <div class="settings-row">
+      <input type="text" id="ghBranch" placeholder="main" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+    </div>
+    <label for="ghToken">Token (Fine-grained, สิทธิ์ Contents: Read and write)</label>
+    <div class="settings-row">
+      <input type="password" id="ghToken" placeholder="github_pat_..." autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+    </div>
+    <div class="settings-row">
+      <button class="btn btn-primary btn-small" id="ghSaveBtn">บันทึกและทดสอบ</button>
+      <button class="btn btn-outline btn-small" id="ghClearTokenBtn">ลบ token ออกจากเครื่องนี้</button>
+    </div>
+    <p class="settings-hint" id="ghStatus">ยังไม่ได้ตั้งค่า</p>
+    <p class="settings-hint">ข้อมูลทุกรอบจะถูกเก็บเป็นไฟล์รายเดือน (data/ปี-เดือน.json) ใน repo นี้ ทุกเครื่องที่ตั้งค่าเหมือนกันจะเห็นและส่งออกข้อมูลชุดเดียวกัน แนะนำให้ใช้ repo แบบ Private แยกจาก repo ของหน้าเว็บ token เก็บในเบราว์เซอร์เครื่องนี้เท่านั้น ห้ามส่งให้ใครและห้ามใส่ในโค้ด</p>
 
     <h3>ผู้รับผิดชอบประจำจุด (สำหรับ mention ในข้อความแจ้งเตือน)</h3>
     <div class="mention-row" style="font-weight:600;font-size:11px;color:var(--steel-600);">
@@ -379,7 +433,7 @@ table.preview-table tr.row-danger td{background:var(--red-bg);color:#8a2c26;}
       <input type="text" id="supervisorMention" placeholder="@หัวหน้าสมชาย">
       <button class="btn btn-outline btn-small" id="saveSupervisorBtn">บันทึก</button>
     </div>
-    <p class="settings-hint">ข้อความแจ้งเตือนจะ mention หัวหน้าเสมอ บวกกับผู้รับผิดชอบของ Line/จุดงานนั้นๆ ถ้ามีตั้งไว้ (ใช้ Chat ID กลุ่มเดียวกันด้านบน mention คนในกลุ่ม)</p>
+    <p class="settings-hint">ตอนนี้ระบบยังไม่ส่งแจ้งเตือน Telegram จริง รายชื่อที่กรอกไว้จะเก็บไว้ใช้เมื่อเปิดระบบแจ้งเตือนในภายหลัง</p>
 
     <p class="settings-hint" style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--steel-100);">เวอร์ชันไฟล์: <strong id="appVersionText"></strong></p>
   </div>
@@ -464,10 +518,11 @@ table.preview-table tr.row-danger td{background:var(--red-bg);color:#8a2c26;}
       <span>ประวัติการบันทึกในเครื่องนี้ (<span id="historyCount">0</span> รอบ)</span>
       <span class="car">▾</span>
     </button>
+    <div class="notice" id="pendingBar"></div>
     <div class="history-content" id="historyContent">
       <div id="historyList"></div>
       <div class="history-actions">
-        <button class="btn btn-text btn-small" id="clearHistoryBtn">ล้างประวัติทั้งหมด</button>
+        <button class="btn btn-text btn-small" id="clearHistoryBtn">ล้างประวัติที่ส่งแล้วในเครื่องนี้</button>
       </div>
     </div>
   </section>
@@ -498,8 +553,12 @@ table.preview-table tr.row-danger td{background:var(--red-bg);color:#8a2c26;}
         <input type="date" id="exportEndDate">
       </div>
     </div>
+    <div class="notice" id="sourceNote"></div>
     <p class="settings-hint" id="exportRangeInfo">พบ 0 รายการในช่วงที่เลือก</p>
-    <button class="btn btn-primary" id="exportRangeBtn" style="width:100%;margin-top:6px;">ส่งออก Excel ตามช่วงที่เลือก</button>
+    <div style="display:flex;gap:8px;margin-top:6px;">
+      <button class="btn btn-primary" id="exportRangeBtn" style="flex:1;">ส่งออก Excel ตามช่วงที่เลือก</button>
+      <button class="btn btn-outline" id="refreshRemoteBtn" aria-label="โหลดข้อมูลล่าสุดจาก GitHub">↻ รีเฟรช</button>
+    </div>
     <div class="xlsx-status" id="xlsxStatus">
       <span class="dot loading" id="xlsxStatusDot"></span>
       <span id="xlsxStatusText">กำลังโหลดไลบรารี Excel…</span>
@@ -519,7 +578,7 @@ table.preview-table tr.row-danger td{background:var(--red-bg);color:#8a2c26;}
 
   <section class="card">
     <h2>ส่งออกทั้งหมด</h2>
-    <p class="settings-hint">มีข้อมูลสะสมทั้งหมด <strong id="exportTotalCount">0</strong> รายการในเครื่องนี้</p>
+    <p class="settings-hint" id="exportTotalHint">—</p>
     <button class="btn btn-outline" id="exportAllBtn" style="width:100%;">ส่งออกข้อมูลทั้งหมดเป็น Excel</button>
   </section>
 
@@ -530,10 +589,13 @@ table.preview-table tr.row-danger td{background:var(--red-bg);color:#8a2c26;}
 
 <script>
 /* ===================== SHARED (shell-level) ===================== */
-var APP_VERSION = '2026-09-18-export-unconditional';
-var SHARED_SETTINGS_KEY = 'qcSharedPaUrlV1';
+var APP_VERSION = '2026-09-19-github-storage';
 var MENTION_KEY = 'qcMentionConfigV1';
-var DEFAULT_PA_URL = 'https://default8c308e1514804168aed7b0f7a13520.95.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/c38072771cf945b48ea93c93dc352515/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=HwR56PJW4EEXVhlhu6GOeobdb_2xilW6pRyy-QENmzw';
+var LEGACY_PA_KEY = 'qcSharedPaUrlV1';
+
+/* Old versions stored a Power Automate URL (with a secret signature) in each browser.
+   That flow is no longer used — remove it from this device. */
+try{ localStorage.removeItem(LEGACY_PA_KEY); }catch(e){}
 
 function showToast(msg, type){
   var c = document.getElementById('toastContainer');
@@ -553,17 +615,6 @@ function showToast(msg, type){
   setTimeout(dismiss, duration);
 }
 
-/* ---------- Power Automate settings ---------- */
-function loadPaSettings(){
-  var url = localStorage.getItem(SHARED_SETTINGS_KEY);
-  if(!url){
-    url = DEFAULT_PA_URL;
-    localStorage.setItem(SHARED_SETTINGS_KEY, url);
-  }
-  document.getElementById('paUrl').value = url;
-}
-function getPaUrl(){ return localStorage.getItem(SHARED_SETTINGS_KEY) || ''; }
-
 document.getElementById('settingsBtn').addEventListener('click', function(){
   document.getElementById('settingsPanel').classList.toggle('open');
 });
@@ -576,14 +627,9 @@ document.querySelectorAll('.tab-btn').forEach(function(btn){
     btn.classList.add('active');
     document.getElementById(btn.getAttribute('data-tab')).classList.add('active');
     if(btn.getAttribute('data-tab') === 'tab-export' && typeof window.refreshExportTab === 'function'){
-      window.refreshExportTab();
+      window.refreshExportTab(true); // always pull the latest data from GitHub when opening this tab
     }
   });
-});
-document.getElementById('saveSettingsBtn').addEventListener('click', function(){
-  var url = document.getElementById('paUrl').value.trim();
-  localStorage.setItem(SHARED_SETTINGS_KEY, url);
-  showToast(url ? 'บันทึก Power Automate URL แล้ว' : 'ลบ URL แล้ว', 'success');
 });
 
 /* ---------- Mention config (Line/จุดงาน -> Telegram handle) ---------- */
@@ -592,7 +638,7 @@ function loadMentions(){
   catch(e){ return {supervisor:'', map:{}}; }
 }
 function saveMentions(data){
-  localStorage.setItem(MENTION_KEY, JSON.stringify(data));
+  try{ localStorage.setItem(MENTION_KEY, JSON.stringify(data)); }catch(e){}
 }
 function renderMentionRows(){
   var data = loadMentions();
@@ -649,14 +695,8 @@ function buildMentionText(lineKey){
 }
 
 /* ===================== XLSX library loader (robust, with fallback + retry) =====================
-   Root cause of "export ไม่ได้": the page only ever tried ONE <script src> to cdnjs with
-   no retry and no fallback host. If that single request is slow, blocked, or fails for any
-   reason, `XLSX` is simply undefined forever and every export click just fails silently
-   with no way to recover without a full page reload. This loader:
-   - tries cdnjs first, then falls back to a second CDN (jsdelivr) if that fails
-   - exposes a promise (window.xlsxReady) other code can await before exporting
-   - shows a live status line + retry button in the Export tab
-   - disables/enables the export buttons based on load state, so a click never just "does nothing" */
+   Tries cdnjs first, then falls back to jsdelivr. Exposes window.xlsxReady, shows a live
+   status line + retry button in the Export tab, and disables the export buttons until ready. */
 var XLSX_SOURCES = [
   'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
   'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'
@@ -715,7 +755,6 @@ function loadXlsxLibrary(){
     }
     return loadScriptOnce(XLSX_SOURCES[i], 8000).then(function(){
       if(typeof XLSX === 'undefined'){
-        // Script "loaded" but somehow didn't define XLSX (blocked/corrupted response) — try next source.
         return attempt(i+1);
       }
       setXlsxStatus('ready', 'ไลบรารี Excel พร้อมใช้งาน');
@@ -747,14 +786,28 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
   var THRESHOLD_DANGER = 0.10;
   var THRESHOLD_WARN = 0.05;
   var GAUGE_VISUAL_MAX = 0.20;
+
+  /* Same key as older versions on purpose, so rows already saved on this device are picked up. */
   var HISTORY_KEY = 'boneQcHistoryV1';
-  var HISTORY_LIMIT = 1000;
+  var GH_CONFIG_KEY = 'qcGhConfigV1';
+  var GH_API = 'https://api.github.com';
+  var GH_DATA_DIR = 'data';
+  /* Fields that only exist on this device (never written to GitHub). */
+  var LOCAL_ONLY_FIELDS = ['synced','remote','rev','cleanupYms','submittedOk'];
 
   /* ===================== State ===================== */
   var currentMachines = {};   // { 'R-1': {st3:0,...,st9:0, legsIn:null} }
-  var history = [];           // flat array of saved machine rows
+  var history = [];           // local copy: every row saved on this device (+ its sync status)
   var submitting = false;
+  var syncing = false;        // a manual/auto "send pending" run is in progress
   var editingBatchId = null;  // batchId currently loaded for editing, or null
+
+  var ghCache = {};           // 'YYYY-MM' -> {rows:[...]}  (rows read from GitHub)
+  var ghMonths = null;        // list of 'YYYY-MM' that exist in data/ on GitHub
+  var ghLock = Promise.resolve();
+  var exportSeq = 0;          // guards against out-of-order async refreshes
+  var exportRows = [];        // rows currently shown in the Export tab
+  var exportLoadedAt = null;
 
   /* ===================== Element refs ===================== */
   var el = {
@@ -779,9 +832,16 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
     historyList: document.getElementById('historyList'),
     historyCount: document.getElementById('historyCount'),
     clearHistoryBtn: document.getElementById('clearHistoryBtn'),
+    pendingBar: document.getElementById('pendingBar'),
     editingBanner: document.getElementById('editingBanner'),
     editingBannerText: document.getElementById('editingBannerText'),
-    cancelEditBtn: document.getElementById('cancelEditBtn')
+    cancelEditBtn: document.getElementById('cancelEditBtn'),
+    ghRepo: document.getElementById('ghRepo'),
+    ghBranch: document.getElementById('ghBranch'),
+    ghToken: document.getElementById('ghToken'),
+    ghSaveBtn: document.getElementById('ghSaveBtn'),
+    ghClearTokenBtn: document.getElementById('ghClearTokenBtn'),
+    ghStatus: document.getElementById('ghStatus')
   };
 
   /* ===================== Helpers ===================== */
@@ -798,6 +858,11 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
   function todayIsoLocal(){
     var d = new Date();
     return d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate());
+  }
+
+  function firstOfMonthIso(){
+    var d = new Date();
+    return d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-01';
   }
 
   function nowTimeLocal(){
@@ -825,7 +890,13 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
     return 'var(--green)';
   }
 
-  /* showToast, getPaUrl, buildMentionText, loadXlsxLibrary are provided by the shared script block above */
+  function sleep(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
+  function uniq(arr){ return arr.filter(function(v,i){ return arr.indexOf(v) === i; }); }
+  function errText(e){ return (e && e.message) ? e.message : 'ไม่ทราบสาเหตุ'; }
+  function newId(){ return Date.now() + '-' + Math.random().toString(36).slice(2,8); }
+  function timeHHMM(ts){ var d = new Date(ts); return pad2(d.getHours()) + ':' + pad2(d.getMinutes()); }
+
+  /* showToast, buildMentionText, loadXlsxLibrary are provided by the shared script block above */
 
   /* ===================== Header field init ===================== */
   function updateThaiDateHint(){
@@ -990,7 +1061,7 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
       if(s.lineExceeded){
         parts.push('เฉลี่ยรวมทั้ง Line เกิน 10% ('+fmtPct(s.avgRate)+')');
       }
-      el.alertBannerText.innerHTML = parts.join(' • ') + ' — เมื่อกดบันทึก ระบบจะส่งแจ้งเตือน Telegram ให้อัตโนมัติ';
+      el.alertBannerText.innerHTML = parts.join(' • ');
     } else {
       el.alertBanner.classList.remove('show');
     }
@@ -1004,6 +1075,442 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
     if(!el.dateInput.value) missing.push('วันที่');
     if(Object.keys(currentMachines).length === 0) missing.push('ข้อมูลเครื่อง (กรุณาเลือก Line)');
     return missing;
+  }
+
+  /* ===================== GitHub storage layer =====================
+     Data lives in the data repo as one JSON file per month: data/YYYY-MM.json
+     (an array of rows, one row per machine per round — same shape as the local rows).
+     Every write is: read the month file -> change it -> commit it back (with the file's sha).
+     If someone else committed at the same moment GitHub answers 409, and we re-read and retry.
+     Every change is idempotent by batchId, so re-sending the same round never duplicates it. */
+  function GhError(status, message){
+    this.name = 'GhError';
+    this.status = status;   // 0 = network/timeout, -1 = corrupted data file
+    this.message = message;
+  }
+  GhError.prototype = Object.create(Error.prototype);
+
+  function getGhConfig(){
+    try{
+      var c = JSON.parse(localStorage.getItem(GH_CONFIG_KEY));
+      if(c) return {repo:String(c.repo||'').trim(), branch:String(c.branch||'').trim(), token:String(c.token||'').trim()};
+    }catch(e){}
+    return {repo:'', branch:'main', token:''};
+  }
+  function setGhConfig(cfg){
+    try{ localStorage.setItem(GH_CONFIG_KEY, JSON.stringify({repo:cfg.repo, branch:cfg.branch, token:cfg.token})); }catch(e){}
+  }
+  function ghConfigured(){
+    var c = getGhConfig();
+    return /^[A-Za-z0-9_.\-]+\/[A-Za-z0-9_.\-]+$/.test(c.repo) && c.token.length > 0;
+  }
+  function normalizeRepo(s){
+    return String(s||'').trim()
+      .replace(/^https?:\/\/github\.com\//i, '')
+      .replace(/\.git$/i, '')
+      .replace(/^\/+|\/+$/g, '');
+  }
+
+  function ghHeaders(extra){
+    var h = {
+      'Authorization': 'Bearer ' + getGhConfig().token,
+      'Accept': 'application/vnd.github+json'
+    };
+    if(extra) Object.keys(extra).forEach(function(k){ h[k] = extra[k]; });
+    return h;
+  }
+
+  function ghContentsUrl(path, withRef){
+    var cfg = getGhConfig();
+    var url = GH_API + '/repos/' + cfg.repo + '/contents/' + path;
+    if(withRef && cfg.branch) url += '?ref=' + encodeURIComponent(cfg.branch);
+    return url;
+  }
+
+  async function ghFetch(url, opts){
+    var ctrl = new AbortController();
+    var timer = setTimeout(function(){ ctrl.abort(); }, 20000);
+    try{
+      var o = Object.assign({}, opts || {}, {signal: ctrl.signal, cache: 'no-store'});
+      return await fetch(url, o);
+    }catch(e){
+      throw new GhError(0, 'เชื่อมต่อ GitHub ไม่ได้ (ตรวจอินเทอร์เน็ต) หรือหมดเวลารอ');
+    }finally{
+      clearTimeout(timer);
+    }
+  }
+
+  async function ghErrorFromResponse(res){
+    var detail = '';
+    try{ var j = await res.json(); detail = (j && j.message) ? j.message : ''; }catch(e){}
+    var st = res.status;
+    if(st === 401) return new GhError(401, 'token ไม่ถูกต้องหรือหมดอายุ — สร้าง token ใหม่แล้ววางใน ⚙ ตั้งค่า');
+    if(st === 403){
+      if(res.headers.get('x-ratelimit-remaining') === '0') return new GhError(403, 'เรียก GitHub ถี่เกินโควตา รอสักครู่แล้วลองใหม่');
+      return new GhError(403, 'token ไม่มีสิทธิ์เขียน repo นี้ (ต้องตั้ง Contents: Read and write) หรือองค์กรยังไม่อนุมัติ token');
+    }
+    if(st === 404) return new GhError(404, 'ไม่พบ repo หรือ branch นี้ หรือ token ไม่ได้เลือก repo นี้ไว้ — ตรวจชื่อ repo ใน ⚙ ตั้งค่า');
+    if(st === 409) return new GhError(409, 'มีคนบันทึกพร้อมกัน (ข้อมูลชนกัน) ลองส่งซ้ำอีกครั้ง');
+    if(st === 422) return new GhError(422, 'GitHub ปฏิเสธคำขอ' + (detail ? ': ' + detail : ''));
+    if(st >= 500) return new GhError(st, 'GitHub ขัดข้องชั่วคราว (' + st + ') ลองใหม่ภายหลัง');
+    return new GhError(st, 'GitHub ตอบกลับ ' + st + (detail ? ': ' + detail : ''));
+  }
+
+  /* --- UTF-8 <-> base64 (Thai text safe, large-file safe) --- */
+  function utf8ToB64(str){
+    var bytes = new TextEncoder().encode(str);
+    var bin = '';
+    var chunk = 0x8000;
+    for(var i = 0; i < bytes.length; i += chunk){
+      bin += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+    }
+    return btoa(bin);
+  }
+  function b64ToUtf8(b64){
+    var bin = atob(String(b64).replace(/\s/g, ''));
+    var bytes = new Uint8Array(bin.length);
+    for(var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new TextDecoder().decode(bytes);
+  }
+
+  /* One row per line keeps the file compact and makes GitHub's commit diffs readable. */
+  function serializeRows(rows){
+    if(rows.length === 0) return '[]\n';
+    return '[\n' + rows.map(function(r){ return JSON.stringify(r); }).join(',\n') + '\n]\n';
+  }
+  function parseRows(text, ym){
+    var t = String(text || '').replace(/^\uFEFF/, '').trim();
+    if(t === '') return [];
+    var data;
+    try{ data = JSON.parse(t); }
+    catch(e){ throw new GhError(-1, 'ไฟล์ data/' + ym + '.json บน GitHub อ่านไม่ได้ (รูปแบบเสีย) — ระบบจะไม่เขียนทับ กรุณาตรวจไฟล์ใน repo'); }
+    if(!Array.isArray(data)) throw new GhError(-1, 'ไฟล์ data/' + ym + '.json ไม่ใช่รายการข้อมูล — ระบบจะไม่เขียนทับ กรุณาตรวจไฟล์ใน repo');
+    return data;
+  }
+
+  /* Read one month file. Works for files over 1 MB too (GitHub returns no inline
+     content for those, so we fetch the raw file with a second request). */
+  async function ghGetMonth(ym){
+    var url = ghContentsUrl(GH_DATA_DIR + '/' + ym + '.json', true);
+    var res = await ghFetch(url, {headers: ghHeaders()});
+    if(res.status === 404) return {rows: [], sha: null};
+    if(!res.ok) throw await ghErrorFromResponse(res);
+    var meta = await res.json();
+    var text;
+    if(meta.encoding === 'base64' && meta.content){
+      text = b64ToUtf8(meta.content);
+    } else {
+      var raw = await ghFetch(url, {headers: ghHeaders({'Accept': 'application/vnd.github.raw+json'})});
+      if(!raw.ok) throw await ghErrorFromResponse(raw);
+      text = await raw.text();
+    }
+    return {rows: parseRows(text, ym), sha: meta.sha};
+  }
+
+  async function ghPutMonth(ym, rows, sha, message){
+    var cfg = getGhConfig();
+    var body = {message: message, content: utf8ToB64(serializeRows(rows))};
+    if(sha) body.sha = sha;
+    if(cfg.branch) body.branch = cfg.branch;
+    var res = await ghFetch(ghContentsUrl(GH_DATA_DIR + '/' + ym + '.json', false), {
+      method: 'PUT',
+      headers: ghHeaders({'Content-Type': 'application/json'}),
+      body: JSON.stringify(body)
+    });
+    if(!res.ok) throw await ghErrorFromResponse(res);
+    return true;
+  }
+
+  /* Run one GitHub write at a time from this page. */
+  function withGhLock(fn){
+    var run = ghLock.then(fn);
+    ghLock = run.catch(function(){});
+    return run;
+  }
+
+  /* Read-modify-write one month file, retrying when another device committed first.
+     mutator(rows) returns the new rows, or null when nothing needs to change. */
+  function modifyMonth(ym, mutator, message){
+    return withGhLock(async function(){
+      var lastErr = null;
+      for(var attempt = 0; attempt < 4; attempt++){
+        var cur = await ghGetMonth(ym);
+        var next = mutator(cur.rows.slice());
+        if(next === null){
+          ghCache[ym] = {rows: cur.rows};
+          return cur.rows;
+        }
+        try{
+          await ghPutMonth(ym, next, cur.sha, message);
+          ghCache[ym] = {rows: next};
+          if(ghMonths && ghMonths.indexOf(ym) === -1){ ghMonths.push(ym); ghMonths.sort(); }
+          return next;
+        }catch(e){
+          if(e instanceof GhError && (e.status === 409 || e.status === 422)){
+            lastErr = e;
+            await sleep(400 + attempt * 600);
+            continue;
+          }
+          throw e;
+        }
+      }
+      throw lastErr || new GhError(409, 'มีคนบันทึกพร้อมกัน ลองส่งซ้ำอีกครั้ง');
+    });
+  }
+
+  /* List which months have a data file. */
+  async function ghListMonths(){
+    var res = await ghFetch(ghContentsUrl(GH_DATA_DIR, true), {headers: ghHeaders()});
+    if(res.status === 404){
+      // No data folder yet — or the repo itself is wrong. Check which.
+      var r2 = await ghFetch(GH_API + '/repos/' + getGhConfig().repo, {headers: ghHeaders()});
+      if(!r2.ok) throw await ghErrorFromResponse(r2);
+      return [];
+    }
+    if(!res.ok) throw await ghErrorFromResponse(res);
+    var list = await res.json();
+    if(!Array.isArray(list)) return [];
+    return list.filter(function(f){ return f.type === 'file' && /^\d{4}-\d{2}\.json$/.test(f.name); })
+               .map(function(f){ return f.name.slice(0,7); }).sort();
+  }
+
+  async function mapPool(items, limit, fn){
+    var i = 0;
+    var workers = [];
+    for(var w = 0; w < Math.min(limit, items.length); w++){
+      workers.push((async function(){
+        while(i < items.length){
+          var idx = i++;
+          await fn(items[idx]);
+        }
+      })());
+    }
+    await Promise.all(workers);
+  }
+
+  function filterRowsByRange(rows, startIso, endIso){
+    return rows.filter(function(h){
+      if(startIso && h.dateIso < startIso) return false;
+      if(endIso && h.dateIso > endIso) return false;
+      return true;
+    });
+  }
+
+  /* Rows from GitHub for a date range. force=true re-reads from GitHub instead of using this page's cache. */
+  async function loadRemoteRows(startIso, endIso, force){
+    if(force || !ghMonths) ghMonths = await ghListMonths();
+    var s = startIso ? startIso.slice(0,7) : '';
+    var e = endIso ? endIso.slice(0,7) : '';
+    var months = ghMonths.filter(function(ym){ return (!s || ym >= s) && (!e || ym <= e); });
+    var todo = months.filter(function(ym){ return force || !ghCache[ym]; });
+    await mapPool(todo, 4, async function(ym){
+      var f = await ghGetMonth(ym);
+      ghCache[ym] = {rows: f.rows};
+    });
+    var rows = [];
+    months.forEach(function(ym){ rows = rows.concat(ghCache[ym] ? ghCache[ym].rows : []); });
+    rows = filterRowsByRange(rows, startIso, endIso);
+    rows.sort(function(a,b){
+      var ka = a.dateIso + ' ' + (a.time || ''), kb = b.dateIso + ' ' + (b.time || '');
+      return ka < kb ? -1 : ka > kb ? 1 : 0;
+    });
+    return rows;
+  }
+
+  async function ghTestConnection(){
+    var cfg = getGhConfig();
+    var res = await ghFetch(GH_API + '/repos/' + cfg.repo, {headers: ghHeaders()});
+    if(res.status === 404) throw new GhError(404, 'ไม่พบ repo "' + cfg.repo + '" — ตรวจชื่อ owner/repo และตรวจว่า token เลือก repo นี้ไว้');
+    if(!res.ok) throw await ghErrorFromResponse(res);
+    var info = await res.json();
+    if(info.permissions && info.permissions.push === false){
+      throw new GhError(403, 'บัญชีนี้ไม่มีสิทธิ์เขียนใน repo นี้');
+    }
+    if(cfg.branch){
+      var b = await ghFetch(GH_API + '/repos/' + cfg.repo + '/branches/' + encodeURIComponent(cfg.branch), {headers: ghHeaders()});
+      if(b.status === 404) throw new GhError(404, 'ไม่พบ branch "' + cfg.branch + '" ใน repo นี้');
+      if(!b.ok) throw await ghErrorFromResponse(b);
+    }
+    return {name: info.full_name, isPrivate: !!info.private};
+  }
+
+  /* ===================== Local history (this device) ===================== */
+  function toRemoteRow(r){
+    var o = {};
+    Object.keys(r).forEach(function(k){ if(LOCAL_ONLY_FIELDS.indexOf(k) === -1) o[k] = r[k]; });
+    return o;
+  }
+
+  function pendingBatchIds(){
+    var seen = {}, out = [];
+    history.forEach(function(r){
+      if(r.synced !== true && !seen[r.batchId]){ seen[r.batchId] = true; out.push(r.batchId); }
+    });
+    return out;
+  }
+
+  function loadHistory(){
+    try{
+      var raw = localStorage.getItem(HISTORY_KEY);
+      history = raw ? JSON.parse(raw) : [];
+    }catch(e){ history = []; }
+    /* Rows saved by older versions were never sent anywhere (demo mode), so treat them
+       as "not sent yet" — they get uploaded to GitHub the first time it is set up. */
+    history.forEach(function(r){
+      if(r.synced !== true) r.synced = false;
+      if(!r.rev) r.rev = r.batchId;
+      delete r.submittedOk;
+    });
+    renderHistory();
+  }
+
+  /* Save the local copy. If the browser storage is full, drop the oldest rows that are
+     already safe on GitHub — rows that have not been sent yet are never dropped. */
+  function persistHistory(){
+    while(true){
+      try{ localStorage.setItem(HISTORY_KEY, JSON.stringify(history)); return true; }
+      catch(e){
+        var idx = -1;
+        for(var i = 0; i < history.length; i++){ if(history[i].synced === true){ idx = i; break; } }
+        if(idx === -1){
+          showToast('พื้นที่จัดเก็บในเครื่องเต็ม และมีข้อมูลที่ยังไม่ส่งขึ้น GitHub — กรุณาตั้งค่า GitHub แล้วส่งข้อมูลก่อน', 'error');
+          return false;
+        }
+        var bid = history[idx].batchId;
+        history = history.filter(function(r){ return r.batchId !== bid; });
+      }
+    }
+  }
+
+  function saveToHistory(payload, opts){
+    opts = opts || {};
+    var batchId = opts.batchId || newId();
+    var rev = newId();                       // changes on every save, so a late "sent" reply can't mark a newer edit as sent
+    var savedAt = new Date().toISOString();
+    payload.machines.forEach(function(m){
+      var row = {
+        batchId:batchId,
+        date:payload.date, dateIso:payload.dateIso, time:payload.time,
+        shift:payload.shift, line:payload.line,
+        machine:m.machine,
+        st3:m.st3, st4:m.st4, st5:m.st5, st6:m.st6, st7:m.st7, st8:m.st8, st9:m.st9,
+        legsIn:m.legsIn, missCount:m.missCount, missRate:m.missRate,
+        avgLineRate:payload.summary.avgMissRate, exceeded:m.exceeded,
+        notes:payload.notes, savedAt:savedAt,
+        rev:rev, synced:false, remote:!!opts.remote
+      };
+      if(opts.cleanupYms && opts.cleanupYms.length) row.cleanupYms = opts.cleanupYms.slice();
+      history.push(row);
+    });
+    persistHistory();
+    renderHistory();
+    return batchId;
+  }
+
+  /* Send one or more saved rounds to GitHub (one commit per month file, no matter how many rounds). */
+  async function pushBatches(ids){
+    var snap = [];
+    ids.forEach(function(id){
+      var rows = history.filter(function(r){ return r.batchId === id; });
+      if(rows.length === 0) return;
+      var ym = rows[0].dateIso.slice(0,7);
+      snap.push({
+        id:id, rev:rows[0].rev, ym:ym,
+        remoteRows: rows.map(toRemoteRow),
+        cleanup: (rows[0].cleanupYms || []).filter(function(y){ return y !== ym; }),
+        head: rows[0]
+      });
+    });
+    if(snap.length === 0) return;
+
+    var byMonth = {};
+    snap.forEach(function(s){ (byMonth[s.ym] = byMonth[s.ym] || []).push(s); });
+
+    // 1) write each month once
+    var months = Object.keys(byMonth).sort();
+    for(var i = 0; i < months.length; i++){
+      var ym = months[i];
+      var group = byMonth[ym];
+      var idSet = {}, add = [];
+      group.forEach(function(s){ idSet[s.id] = true; add = add.concat(s.remoteRows); });
+      var msg = group.length === 1
+        ? 'บันทึก ' + group[0].head.line + ' ' + group[0].head.shift + ' ' + group[0].head.date + ' ' + group[0].head.time
+        : 'ส่งข้อมูล ' + group.length + ' รอบ (' + ym + ')';
+      await modifyMonth(ym, function(list){
+        return list.filter(function(r){ return !idSet[r.batchId]; }).concat(add);
+      }, msg);
+    }
+
+    // 2) if a round was moved to another month by an edit, remove it from the old month
+    var cleanupByMonth = {};
+    snap.forEach(function(s){
+      s.cleanup.forEach(function(y){ (cleanupByMonth[y] = cleanupByMonth[y] || {})[s.id] = true; });
+    });
+    var cMonths = Object.keys(cleanupByMonth).sort();
+    for(var j = 0; j < cMonths.length; j++){
+      var set = cleanupByMonth[cMonths[j]];
+      await modifyMonth(cMonths[j], function(list){
+        var kept = list.filter(function(r){ return !set[r.batchId]; });
+        return kept.length === list.length ? null : kept;
+      }, 'ย้ายรอบตรวจออกจากเดือนเดิม');
+    }
+
+    // 3) mark as sent (only if the round was not edited again while we were sending)
+    snap.forEach(function(s){
+      history.forEach(function(r){
+        if(r.batchId === s.id && r.rev === s.rev){
+          r.synced = true;
+          r.remote = true;
+          delete r.cleanupYms;
+        }
+      });
+    });
+    persistHistory();
+  }
+
+  async function deleteBatchRemote(yms, label){
+    for(var i = 0; i < yms.length; i++){
+      await modifyMonth(yms[i], function(list){
+        var kept = list.filter(function(r){ return r.batchId !== label.batchId; });
+        return kept.length === list.length ? null : kept;
+      }, 'ลบรอบตรวจ ' + label.line + ' ' + label.shift + ' ' + label.date + ' ' + label.time);
+    }
+  }
+
+  /* Send everything that is still pending, with visible status. */
+  async function runPush(ids, okMsg){
+    if(syncing){ showToast('กำลังส่งข้อมูลอยู่ รอสักครู่', 'warning'); return false; }
+    syncing = true;
+    renderHistory();
+    try{
+      await pushBatches(ids);
+      showToast(okMsg, 'success');
+      return true;
+    }catch(e){
+      showToast('ส่งขึ้น GitHub ไม่สำเร็จ: ' + errText(e), 'error');
+      return false;
+    }finally{
+      syncing = false;
+      renderHistory();
+      refreshExportIfVisible();
+    }
+  }
+
+  async function runSync(manual){
+    if(!ghConfigured()){
+      if(manual) showToast('ยังไม่ได้ตั้งค่า GitHub (กดปุ่ม ⚙ ด้านบน)', 'warning');
+      return;
+    }
+    if(syncing){
+      if(manual) showToast('กำลังส่งข้อมูลอยู่ รอสักครู่', 'warning');
+      return;
+    }
+    var ids = pendingBatchIds();
+    if(ids.length === 0){
+      if(manual) showToast('ไม่มีข้อมูลค้างส่ง', 'success');
+      return;
+    }
+    await runPush(ids, 'ส่งข้อมูลที่ค้างอยู่ ' + ids.length + ' รอบขึ้น GitHub แล้ว');
   }
 
   /* ===================== Submit ===================== */
@@ -1044,10 +1551,10 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
   function setSubmitLoading(loading){
     submitting = loading;
     el.submitBtn.disabled = loading;
-    el.submitBtn.textContent = loading ? 'กำลังบันทึก…' : 'บันทึก';
+    el.submitBtn.textContent = loading ? 'กำลังบันทึก…' : (editingBatchId ? 'บันทึกการแก้ไข' : 'บันทึก');
   }
 
-  function handleSubmit(){
+  async function handleSubmit(){
     if(submitting) return;
     var missing = validateHeader();
     if(missing.length > 0){
@@ -1058,26 +1565,49 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
     var payload = buildPayload();
     setSubmitLoading(true);
     var isEditing = !!editingBatchId;
-    var targetBatchId = editingBatchId;
+    var opts = {};
 
-    // Demo mode: no real network call to Power Automate. Data is saved locally
-    // and any alert condition is simulated so the workflow can be demonstrated
-    // end-to-end without a live backend.
-    setTimeout(function(){
-      if(isEditing){
-        history = history.filter(function(r){ return r.batchId !== targetBatchId; });
+    if(isEditing){
+      var oldRows = history.filter(function(r){ return r.batchId === editingBatchId; });
+      var newYm = payload.dateIso.slice(0,7);
+      var cleanup = [];
+      var carryRemote = false;
+      if(oldRows.length){
+        cleanup = (oldRows[0].cleanupYms || []).concat([oldRows[0].dateIso.slice(0,7)]);
+        carryRemote = oldRows.some(function(r){ return r.remote; });
       }
-      saveToHistory(payload, true, isEditing ? targetBatchId : null);
-      var savedLabel = isEditing ? 'บันทึกการแก้ไขสำเร็จ' : 'บันทึกสำเร็จ';
-      if(payload.summary.exceededMachines.length > 0 || payload.summary.lineExceeded){
-        showToast(savedLabel + ' — ' + payload.line + ' เกิน 10%', 'warning');
-      } else {
-        showToast(savedLabel, 'success');
-      }
-      if(isEditing) exitEditMode();
-      resetMachineInputsOnly();
-      setSubmitLoading(false);
-    }, 350);
+      cleanup = uniq(cleanup).filter(function(y){ return y !== newYm; });
+      opts = {batchId: editingBatchId, remote: carryRemote, cleanupYms: cleanup};
+      history = history.filter(function(r){ return r.batchId !== editingBatchId; });
+    }
+
+    // 1) Save on this device first, so nothing is lost even if the network is down.
+    var batchId = saveToHistory(payload, opts);
+    if(isEditing) exitEditMode();
+    resetMachineInputsOnly();
+
+    // 2) Send to GitHub.
+    var configured = ghConfigured();
+    var pushErr = null;
+    if(configured){
+      try{ await pushBatches([batchId]); }
+      catch(e){ pushErr = e; }
+    }
+
+    var savedLabel = isEditing ? 'บันทึกการแก้ไขสำเร็จ' : 'บันทึกสำเร็จ';
+    var exceeded = payload.summary.exceededMachines.length > 0 || payload.summary.lineExceeded;
+    if(!configured){
+      showToast('บันทึกในเครื่องนี้แล้ว แต่ยังไม่ได้ตั้งค่า GitHub (กดปุ่ม ⚙) เครื่องอื่นจึงยังไม่เห็นข้อมูล', 'warning');
+    } else if(pushErr){
+      showToast('บันทึกในเครื่องนี้แล้ว แต่ส่งขึ้น GitHub ไม่สำเร็จ: ' + errText(pushErr) + ' — กด "ส่งซ้ำ" ในประวัติด้านล่าง', 'error');
+    } else if(exceeded){
+      showToast(savedLabel + ' — ' + payload.line + ' เกิน 10%', 'warning');
+    } else {
+      showToast(savedLabel, 'success');
+    }
+    renderHistory();
+    refreshExportIfVisible();
+    setSubmitLoading(false);
   }
 
   el.submitBtn.addEventListener('click', handleSubmit);
@@ -1102,44 +1632,23 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
   }
   el.clearFormBtn.addEventListener('click', function(){ clearFullForm(false); });
 
-  /* ===================== History (localStorage) ===================== */
-  function loadHistory(){
-    try{
-      var raw = localStorage.getItem(HISTORY_KEY);
-      history = raw ? JSON.parse(raw) : [];
-    }catch(e){ history = []; }
-    renderHistory();
-  }
-
-  function persistHistory(){
-    if(history.length > HISTORY_LIMIT) history = history.slice(history.length - HISTORY_LIMIT);
-    try{ localStorage.setItem(HISTORY_KEY, JSON.stringify(history)); }
-    catch(e){ showToast('พื้นที่จัดเก็บในเครื่องเต็ม กรุณาดาวน์โหลด Excel แล้วล้างประวัติ', 'warning'); }
-  }
-
-  function saveToHistory(payload, submittedOk, forceBatchId){
-    var batchId = forceBatchId || (Date.now() + '-' + Math.random().toString(36).slice(2,8));
-    payload.machines.forEach(function(m){
-      history.push({
-        batchId:batchId,
-        date:payload.date, dateIso:payload.dateIso, time:payload.time,
-        shift:payload.shift, line:payload.line,
-        machine:m.machine,
-        st3:m.st3, st4:m.st4, st5:m.st5, st6:m.st6, st7:m.st7, st8:m.st8, st9:m.st9,
-        legsIn:m.legsIn, missCount:m.missCount, missRate:m.missRate,
-        avgLineRate:payload.summary.avgMissRate, exceeded:m.exceeded,
-        notes:payload.notes, submittedOk:submittedOk
-      });
-    });
-    persistHistory();
-    renderHistory();
-    if(typeof window.refreshExportTab === 'function') window.refreshExportTab();
-  }
-
+  /* ===================== History rendering ===================== */
   function renderHistory(){
-    el.historyCount.textContent = 0;
+    var pend = pendingBatchIds();
+    if(pend.length > 0){
+      el.pendingBar.className = 'notice warn show';
+      el.pendingBar.innerHTML =
+        '<span>มี <b>' + pend.length + ' รอบ</b> ที่ยังไม่ได้ส่งขึ้น GitHub' + (ghConfigured() ? '' : ' (ยังไม่ได้ตั้งค่า ⚙)') + '</span>' +
+        '<button class="btn btn-outline btn-tiny" data-notice-action="sync"' + (syncing ? ' disabled' : '') + '>' + (syncing ? 'กำลังส่ง…' : 'ส่งตอนนี้') + '</button>';
+    } else {
+      el.pendingBar.className = 'notice';
+      el.pendingBar.innerHTML = '';
+    }
+
     if(history.length === 0){
+      el.historyCount.textContent = 0;
       el.historyList.innerHTML = '<div class="history-empty">ยังไม่มีประวัติการบันทึกในเครื่องนี้</div>';
+      updateSourceNote();
       return;
     }
     var batches = {};
@@ -1156,7 +1665,7 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
       var head = rows[0];
       var exceededChips = rows.filter(function(r){return r.exceeded;});
       var okChips = rows.filter(function(r){return !r.exceeded;});
-      var allSent = rows.every(function(r){return r.submittedOk;});
+      var allSent = rows.every(function(r){return r.synced === true;});
 
       var chips = exceededChips.map(function(r){
         return '<span class="hchip danger">'+r.machine+' '+fmtPct(r.missRate)+'</span>';
@@ -1172,15 +1681,17 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
           '</div>' +
           '<div class="history-batch-head">' +
             '<span class="pill '+(head.avgLineRate>THRESHOLD_DANGER?'danger':'good')+'">AVG '+fmtPct(head.avgLineRate)+'</span>' +
-            '<span class="pill '+(allSent?'sent':'failed')+'">'+(allSent?'ส่งสำเร็จ':'ส่งไม่สำเร็จ')+'</span>' +
+            '<span class="pill '+(allSent?'sent':'failed')+'">'+(allSent?'ส่งสำเร็จ':'ยังไม่ส่ง')+'</span>' +
           '</div>' +
           '<div class="history-machines">'+chips+'</div>' +
           '<div class="history-actions-row">' +
+            (allSent ? '' : '<button class="btn btn-outline btn-tiny" data-resend-batch="'+bid+'">↻ ส่งซ้ำ</button>') +
             '<button class="btn btn-outline btn-tiny" data-edit-batch="'+bid+'">✎ แก้ไข</button>' +
             '<button class="btn btn-danger-outline btn-tiny" data-delete-batch="'+bid+'">🗑 ลบ</button>' +
           '</div>' +
         '</div>';
     }).join('');
+    updateSourceNote();
   }
 
   /* ---------- Edit / delete a saved batch ---------- */
@@ -1236,7 +1747,45 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
     showToast('ยกเลิกการแก้ไขแล้ว', 'success');
   });
 
+  async function deleteBatch(bid){
+    var rows = history.filter(function(r){ return r.batchId === bid; });
+    if(rows.length === 0) return;
+    if(!confirm('ยืนยันลบข้อมูลชุดนี้? การลบนี้ไม่สามารถย้อนกลับได้')) return;
+
+    var head = rows[0];
+    var hadRemote = rows.some(function(r){ return r.remote; });
+
+    if(ghConfigured()){
+      var yms = uniq([head.dateIso.slice(0,7)].concat(head.cleanupYms || []));
+      try{
+        await deleteBatchRemote(yms, {batchId: bid, line: head.line, shift: head.shift, date: head.date, time: head.time});
+      }catch(e){
+        // Offline and this round never reached GitHub: deleting the local copy is enough.
+        if(!(e && e.status === 0 && !hadRemote)){
+          showToast('ลบบน GitHub ไม่สำเร็จ (ยังไม่ได้ลบ): ' + errText(e), 'error');
+          return;
+        }
+      }
+    } else if(hadRemote){
+      showToast('ข้อมูลชุดนี้อยู่บน GitHub แล้ว ต้องตั้งค่า GitHub (⚙) ก่อนจึงจะลบได้', 'error');
+      return;
+    }
+
+    history = history.filter(function(r){ return r.batchId !== bid; });
+    persistHistory();
+    renderHistory();
+    refreshExportIfVisible();
+    if(editingBatchId === bid) exitEditMode();
+    showToast('ลบข้อมูลชุดนี้แล้ว', 'success');
+  }
+
   el.historyList.addEventListener('click', function(e){
+    var resendBtn = e.target.closest('[data-resend-batch]');
+    if(resendBtn){
+      if(!ghConfigured()){ showToast('ยังไม่ได้ตั้งค่า GitHub (กดปุ่ม ⚙ ด้านบน)', 'warning'); return; }
+      runPush([resendBtn.getAttribute('data-resend-batch')], 'ส่งขึ้น GitHub แล้ว');
+      return;
+    }
     var editBtn = e.target.closest('[data-edit-batch]');
     if(editBtn){
       loadBatchIntoForm(editBtn.getAttribute('data-edit-batch'));
@@ -1244,15 +1793,7 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
     }
     var delBtn = e.target.closest('[data-delete-batch]');
     if(delBtn){
-      var bid = delBtn.getAttribute('data-delete-batch');
-      if(confirm('ยืนยันลบข้อมูลชุดนี้? การลบนี้ไม่สามารถย้อนกลับได้')){
-        history = history.filter(function(r){ return r.batchId !== bid; });
-        persistHistory();
-        renderHistory();
-        if(typeof window.refreshExportTab === 'function') window.refreshExportTab();
-        if(editingBatchId === bid) exitEditMode();
-        showToast('ลบข้อมูลชุดนี้แล้ว', 'success');
-      }
+      deleteBatch(delBtn.getAttribute('data-delete-batch'));
     }
   });
 
@@ -1261,14 +1802,23 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
     el.historyContent.classList.toggle('open');
   });
 
+  /* Clears only the copies on this device that are already safe on GitHub.
+     Rounds that have not been sent yet are always kept. */
   el.clearHistoryBtn.addEventListener('click', function(){
-    if(history.length === 0) return;
-    if(confirm('ยืนยันล้างประวัติทั้งหมด '+history.length+' รายการในเครื่องนี้? (แนะนำดาวน์โหลด Excel ก่อน)')){
-      history = [];
+    var pending = pendingBatchIds().length;
+    var sentRows = history.filter(function(r){ return r.synced === true; });
+    var sentBatches = uniq(sentRows.map(function(r){ return r.batchId; })).length;
+    if(sentBatches === 0){
+      showToast(pending > 0 ? 'ไม่มีประวัติที่ส่งแล้วให้ล้าง (มี ' + pending + ' รอบที่ยังไม่ส่ง จึงเก็บไว้)' : 'ไม่มีประวัติให้ล้าง', 'warning');
+      return;
+    }
+    var msg = 'ล้างประวัติที่ส่งขึ้น GitHub แล้ว ' + sentBatches + ' รอบ ออกจากเครื่องนี้? (ข้อมูลบน GitHub ไม่หาย)';
+    if(pending > 0) msg += '\nรอบที่ยังไม่ส่ง ' + pending + ' รอบจะถูกเก็บไว้';
+    if(confirm(msg)){
+      history = history.filter(function(r){ return r.synced !== true; });
       persistHistory();
       renderHistory();
-      if(typeof window.refreshExportTab === 'function') window.refreshExportTab();
-      showToast('ล้างประวัติแล้ว', 'success');
+      showToast('ล้างประวัติที่ส่งแล้วในเครื่องนี้เรียบร้อย', 'success');
     }
   });
 
@@ -1277,21 +1827,12 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
     'St.3','St.4','St.5','St.6','St.7','St.8','St.9',
     'AVG. Miss rate','จำนวนขาเข้า','จำนวนขา Miss rate','AVG','หมายเหตุ'];
 
-  /* IMPORTANT: a published page cannot trigger a browser download by itself
-     (XLSX.writeFile builds a hidden <a download> and clicks it — that kind of
-     script-started save is inert once the page is published/hosted). The
-     platform instead offers a "downloads" runtime capability: build the
-     workbook bytes ourselves, then hand them to claude.use("downloads").save()
-     which shows the viewer a real save/share confirmation. */
   /* Export works two ways depending on where this page is running:
      1) Inside the Claude Artifact viewer (claude.ai) — script-started downloads
-        are blocked there, so we use the platform's "downloads" capability,
-        which shows the viewer a real save/share confirmation.
+        are blocked there, so we use the platform's "downloads" capability.
      2) Opened as a plain HTML file — locally, on GitHub Pages, or any normal
         web host — window.claude does not exist there, so we fall back to a
-        standard browser download (Blob + hidden <a download> click), which
-        works everywhere with no special permission needed.
-     Either way the export always produces a file — no dead end. */
+        standard browser download (Blob + hidden <a download> click). */
   async function doExportRows(rows, fnameSuffix){
     if(typeof XLSX === 'undefined'){
       showToast('ไลบรารี Excel ยังไม่พร้อม โปรดรอสักครู่แล้วลองใหม่ หรือกด "ลองโหลดใหม่" ในแท็บส่งออก', 'error');
@@ -1349,7 +1890,7 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
             showToast('ไฟล์ใหญ่เกินไปสำหรับปลายทางนี้ ลองเลือกช่วงวันที่ให้แคบลง', 'error');
             return;
           }
-          // any other failure (rate_limited, unavailable, etc.) — fall through to the plain browser download below
+          // any other failure — fall through to the plain browser download below
         }
       }
     }
@@ -1371,8 +1912,7 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
   }
 
   /* Wait for the xlsx loader (kicks off at page init) before exporting, instead of
-     failing immediately on a slow connection. If loading genuinely fails, show the
-     real reason instead of a generic "not available" message. */
+     failing immediately on a slow connection. */
   function exportRowsToExcel(rows, fnameSuffix){
     if(typeof XLSX !== 'undefined'){
       doExportRows(rows, fnameSuffix);
@@ -1390,27 +1930,56 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
     });
   }
 
-  function filterHistoryByRange(startIso, endIso){
-    return history.filter(function(h){
-      if(startIso && h.dateIso < startIso) return false;
-      if(endIso && h.dateIso > endIso) return false;
-      return true;
-    });
-  }
-
   var elExport = {
     startDate: document.getElementById('exportStartDate'),
     endDate: document.getElementById('exportEndDate'),
     rangeInfo: document.getElementById('exportRangeInfo'),
     exportRangeBtn: document.getElementById('exportRangeBtn'),
-    totalCount: document.getElementById('exportTotalCount'),
+    refreshBtn: document.getElementById('refreshRemoteBtn'),
+    sourceNote: document.getElementById('sourceNote'),
+    totalHint: document.getElementById('exportTotalHint'),
     exportAllBtn: document.getElementById('exportAllBtn'),
     previewList: document.getElementById('previewList'),
     previewCount: document.getElementById('previewCount'),
     previewRowCount: document.getElementById('previewRowCount')
   };
 
-  /* ---------- NEW: preview of previously entered data for the selected date range ---------- */
+  /* ---------- Where the data on the Export tab comes from ---------- */
+  function updateSourceNote(){
+    var note = document.getElementById('sourceNote');
+    if(!note) return;
+    var pend = pendingBatchIds().length;
+    var cls = 'notice';
+    var html = '';
+    if(!ghConfigured()){
+      cls += ' warn show';
+      html = '<span>ยังไม่ได้ตั้งค่า GitHub — เห็นและส่งออกได้เฉพาะข้อมูลในเครื่องนี้</span>' +
+             '<button class="btn btn-outline btn-tiny" data-notice-action="settings">ตั้งค่า</button>';
+    } else if(pend > 0){
+      cls += ' warn show';
+      html = '<span>มี <b>' + pend + ' รอบ</b> ในเครื่องนี้ที่ยังไม่ส่งขึ้น GitHub (ยังไม่รวมในข้อมูลด้านล่างและไฟล์ที่ส่งออก)</span>' +
+             '<button class="btn btn-outline btn-tiny" data-notice-action="sync"' + (syncing ? ' disabled' : '') + '>' + (syncing ? 'กำลังส่ง…' : 'ส่งตอนนี้') + '</button>';
+    } else if(exportLoadedAt){
+      cls += ' ok show';
+      html = '<span>แสดงข้อมูลจาก GitHub (รวมทุกเครื่อง) — โหลดเมื่อ ' + timeHHMM(exportLoadedAt) + ' น.</span>';
+    }
+    note.className = cls;
+    note.innerHTML = html;
+  }
+
+  document.addEventListener('click', function(e){
+    var b = e.target.closest('[data-notice-action]');
+    if(!b) return;
+    var act = b.getAttribute('data-notice-action');
+    if(act === 'settings'){
+      document.getElementById('settingsPanel').classList.add('open');
+      window.scrollTo({top:0, behavior:'smooth'});
+    } else if(act === 'sync'){
+      runSync(true);
+    }
+  });
+
+  /* ---------- Preview of data for the selected date range ---------- */
   function renderPreview(rows){
     elExport.previewRowCount.textContent = rows.length;
 
@@ -1468,36 +2037,172 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
     }).join('');
   }
 
-  function refreshExportTab(){
-    elExport.totalCount.textContent = history.length;
-    var rows = filterHistoryByRange(elExport.startDate.value, elExport.endDate.value);
-    elExport.rangeInfo.textContent = 'พบ ' + rows.length + ' รายการในช่วงที่เลือก';
-    renderPreview(rows);
+  /* Reload the Export tab. force=true re-reads everything from GitHub. */
+  async function refreshExportTab(force){
+    var seq = ++exportSeq;
+    var s = elExport.startDate.value, e = elExport.endDate.value;
+
+    if(!ghConfigured()){
+      exportLoadedAt = null;
+      exportRows = filterRowsByRange(history, s, e);
+      elExport.rangeInfo.textContent = 'พบ ' + exportRows.length + ' รายการในช่วงที่เลือก (เฉพาะในเครื่องนี้)';
+      elExport.totalHint.textContent = 'ยังไม่ได้ตั้งค่า GitHub — มีข้อมูลในเครื่องนี้ ' + history.length + ' แถว';
+      renderPreview(exportRows);
+      updateSourceNote();
+      return;
+    }
+
+    elExport.rangeInfo.textContent = 'กำลังโหลดข้อมูลจาก GitHub…';
+    elExport.previewList.innerHTML = '<div class="preview-empty">กำลังโหลดข้อมูลจาก GitHub…</div>';
+    try{
+      var rows = await loadRemoteRows(s, e, !!force);
+      if(seq !== exportSeq) return;
+      exportRows = rows;
+      exportLoadedAt = Date.now();
+      elExport.rangeInfo.textContent = 'พบ ' + rows.length + ' รายการในช่วงที่เลือก';
+      elExport.totalHint.textContent = 'มีไฟล์ข้อมูลบน GitHub ' + (ghMonths ? ghMonths.length : 0) + ' เดือน — ส่งออกทั้งหมดจะรวมทุกเดือน';
+      renderPreview(rows);
+    }catch(err){
+      if(seq !== exportSeq) return;
+      exportRows = [];
+      exportLoadedAt = null;
+      elExport.rangeInfo.textContent = 'โหลดข้อมูลจาก GitHub ไม่สำเร็จ';
+      elExport.totalHint.textContent = '—';
+      elExport.previewCount.textContent = 0;
+      elExport.previewRowCount.textContent = 0;
+      elExport.previewList.innerHTML = '<div class="preview-empty" style="color:var(--red);">โหลดข้อมูลจาก GitHub ไม่สำเร็จ: ' + errText(err) + '<br>กด "↻ รีเฟรช" เพื่อลองใหม่</div>';
+    }
+    updateSourceNote();
   }
   window.refreshExportTab = refreshExportTab;
 
-  elExport.startDate.addEventListener('change', refreshExportTab);
-  elExport.endDate.addEventListener('change', refreshExportTab);
+  function refreshExportIfVisible(){
+    var panel = document.getElementById('tab-export');
+    if(panel && panel.classList.contains('active')) refreshExportTab(false);
+  }
+
+  elExport.startDate.addEventListener('change', function(){ refreshExportTab(false); });
+  elExport.endDate.addEventListener('change', function(){ refreshExportTab(false); });
+  elExport.refreshBtn.addEventListener('click', function(){ refreshExportTab(true); });
+
+  /* Exporting always pulls the latest data from GitHub first. */
+  async function fetchRowsForExport(startIso, endIso){
+    if(!ghConfigured()) return filterRowsByRange(history, startIso, endIso);
+    showToast('กำลังดึงข้อมูลล่าสุดจาก GitHub…', 'default');
+    try{
+      return await loadRemoteRows(startIso, endIso, true);
+    }catch(err){
+      showToast('ดึงข้อมูลจาก GitHub ไม่สำเร็จ: ' + errText(err), 'error');
+      return null;
+    }
+  }
+
+  var exporting = false;
+  async function runExport(startIso, endIso, suffix){
+    if(exporting) return;
+    exporting = true;
+    try{
+      var rows = await fetchRowsForExport(startIso, endIso);
+      if(rows) exportRowsToExcel(rows, suffix);
+    }finally{
+      exporting = false;
+    }
+  }
 
   elExport.exportRangeBtn.addEventListener('click', function(){
     var startIso = elExport.startDate.value;
     var endIso = elExport.endDate.value;
-    var rows = filterHistoryByRange(startIso, endIso);
-    var suffix = (startIso||'เริ่มต้น') + '_ถึง_' + (endIso||'ปัจจุบัน');
-    exportRowsToExcel(rows, suffix);
+    runExport(startIso, endIso, (startIso||'เริ่มต้น') + '_ถึง_' + (endIso||'ปัจจุบัน'));
   });
 
   elExport.exportAllBtn.addEventListener('click', function(){
-    exportRowsToExcel(history, 'ทั้งหมด_' + todayIsoLocal());
+    runExport('', '', 'ทั้งหมด_' + todayIsoLocal());
   });
+
+  /* ===================== GitHub settings UI ===================== */
+  function setGhStatus(cls, text){
+    el.ghStatus.className = 'settings-hint ' + (cls || '');
+    el.ghStatus.textContent = text;
+  }
+
+  function renderGhSettings(){
+    var c = getGhConfig();
+    el.ghRepo.value = c.repo;
+    el.ghBranch.value = c.branch || 'main';
+    el.ghToken.value = '';
+    el.ghToken.placeholder = c.token ? '•••••• บันทึกไว้แล้ว (เว้นว่างเพื่อใช้ token เดิม)' : 'github_pat_...';
+    if(ghConfigured()) setGhStatus('', 'ตั้งค่าไว้แล้ว: ' + c.repo + (c.branch ? ' (branch ' + c.branch + ')' : '') + ' — กด "บันทึกและทดสอบ" เพื่อตรวจการเชื่อมต่อ');
+    else setGhStatus('hint-warn', 'ยังไม่ได้ตั้งค่า — ข้อมูลจะถูกเก็บในเครื่องนี้เท่านั้น');
+  }
+
+  el.ghSaveBtn.addEventListener('click', async function(){
+    var old = getGhConfig();
+    var repo = normalizeRepo(el.ghRepo.value);
+    var branch = el.ghBranch.value.trim() || 'main';
+    var token = el.ghToken.value.trim() || old.token;
+
+    if(!/^[A-Za-z0-9_.\-]+\/[A-Za-z0-9_.\-]+$/.test(repo)){
+      setGhStatus('hint-err', 'ชื่อ repo ไม่ถูกต้อง — ต้องเป็นรูปแบบ owner/repo เช่น meanburi-qa/qc-data');
+      return;
+    }
+    if(!token){
+      setGhStatus('hint-err', 'ยังไม่ได้ใส่ token');
+      return;
+    }
+
+    setGhConfig({repo: repo, branch: branch, token: token});
+    ghCache = {};
+    ghMonths = null;
+    el.ghRepo.value = repo;
+    el.ghBranch.value = branch;
+    el.ghToken.value = '';
+    el.ghToken.placeholder = '•••••• บันทึกไว้แล้ว (เว้นว่างเพื่อใช้ token เดิม)';
+
+    el.ghSaveBtn.disabled = true;
+    setGhStatus('', 'กำลังทดสอบการเชื่อมต่อ…');
+    try{
+      var info = await ghTestConnection();
+      if(info.isPrivate){
+        setGhStatus('hint-ok', '✓ เชื่อมต่อสำเร็จ: ' + info.name + ' (Private) — สิทธิ์เขียนจะยืนยันเมื่อบันทึกจริงครั้งแรก');
+      } else {
+        setGhStatus('hint-warn', '✓ เชื่อมต่อได้: ' + info.name + ' แต่ repo นี้เป็น Public — ผลตรวจทั้งหมดใครก็เปิดดูได้ แนะนำให้ใช้ repo แบบ Private');
+      }
+      showToast('ตั้งค่า GitHub สำเร็จ', 'success');
+      renderHistory();
+      runSync(false);
+    }catch(err){
+      setGhStatus('hint-err', '✕ ' + errText(err));
+      showToast('เชื่อมต่อ GitHub ไม่สำเร็จ: ' + errText(err), 'error');
+    }finally{
+      el.ghSaveBtn.disabled = false;
+    }
+  });
+
+  el.ghClearTokenBtn.addEventListener('click', function(){
+    var c = getGhConfig();
+    if(!c.token){ showToast('ไม่มี token ในเครื่องนี้', 'warning'); return; }
+    if(!confirm('ลบ token ออกจากเครื่องนี้? (ข้อมูลที่ยังไม่ส่งจะยังอยู่ในเครื่อง แต่จะส่งไม่ได้จนกว่าจะใส่ token ใหม่)')) return;
+    setGhConfig({repo: c.repo, branch: c.branch, token: ''});
+    ghCache = {};
+    ghMonths = null;
+    renderGhSettings();
+    renderHistory();
+    showToast('ลบ token ออกจากเครื่องนี้แล้ว', 'success');
+  });
+
+  window.addEventListener('online', function(){ runSync(false); });
 
   /* ===================== Init ===================== */
   function initToridas(){
     initHeaderDefaults();
     loadHistory();
     renderMachines();
+    elExport.startDate.value = firstOfMonthIso();
     elExport.endDate.value = todayIsoLocal();
-    refreshExportTab();
+    renderGhSettings();
+    updateSourceNote();
+    // Upload anything still pending (including rounds saved by older versions of this page).
+    if(ghConfigured()) runSync(false);
   }
   initToridas();
 
@@ -1506,7 +2211,6 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
 </script>
 <script>
 
-loadPaSettings();
 renderMentionRows();
 loadXlsxLibrary();
 document.getElementById('appVersionText').textContent = APP_VERSION;
