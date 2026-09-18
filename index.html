@@ -790,6 +790,24 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
   /* Same key as older versions on purpose, so rows already saved on this device are picked up. */
   var HISTORY_KEY = 'boneQcHistoryV1';
   var GH_CONFIG_KEY = 'qcGhConfigV1';
+
+  /* ===================== Organization default (fill in before distributing) =====================
+     Any phone/PC that opens this file with NO saved settings (fresh browser, first time) will use
+     these values automatically — no need to open ⚙ Settings on each device.
+     - repo:   "owner/repo" of a PRIVATE GitHub repo, e.g. "cpf-minburi-qc/toridas-data"
+     - branch: usually "main"
+     - token:  a FINE-GRAINED personal access token scoped ONLY to that one repo,
+               with ONLY "Contents: Read and write" permission. Do not use a classic
+               (all-repo) token here — this value is visible to anyone who views the
+               page source on any device that opens this file.
+     Devices can still override this by entering their own values in ⚙ Settings; once a
+     device has its own saved value, this default is ignored on that device. */
+  var DEFAULT_GH_CONFIG = {
+    repo: 'meanburi-qa/Miss_Rate_Toridas',    // <-- ใส่ "owner/repo" ตรงนี้ก่อนแจกไฟล์
+    branch: 'main',
+    token: ''    // <-- อย่าใส่ token ตรงนี้ (ไฟล์นี้จะขึ้น GitHub) ให้ตั้งค่าผ่านลิงก์แทน ดูด้านล่าง
+  };
+
   var GH_API = 'https://api.github.com';
   var GH_DATA_DIR = 'data';
   /* Fields that only exist on this device (never written to GitHub). */
@@ -1092,10 +1110,19 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
 
   function getGhConfig(){
     try{
-      var c = JSON.parse(localStorage.getItem(GH_CONFIG_KEY));
-      if(c) return {repo:String(c.repo||'').trim(), branch:String(c.branch||'').trim(), token:String(c.token||'').trim()};
+      var raw = localStorage.getItem(GH_CONFIG_KEY);
+      if(raw){
+        var c = JSON.parse(raw);
+        if(c) return {repo:String(c.repo||'').trim(), branch:String(c.branch||'').trim(), token:String(c.token||'').trim()};
+      }
     }catch(e){}
-    return {repo:'', branch:'main', token:''};
+    /* No settings saved on this device yet — fall back to the org default so it
+       works out of the box on new phones/PCs without opening ⚙ Settings. */
+    return {
+      repo: String(DEFAULT_GH_CONFIG.repo || '').trim(),
+      branch: String(DEFAULT_GH_CONFIG.branch || 'main').trim(),
+      token: String(DEFAULT_GH_CONFIG.token || '').trim()
+    };
   }
   function setGhConfig(cfg){
     try{ localStorage.setItem(GH_CONFIG_KEY, JSON.stringify({repo:cfg.repo, branch:cfg.branch, token:cfg.token})); }catch(e){}
@@ -2131,8 +2158,14 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
     el.ghBranch.value = c.branch || 'main';
     el.ghToken.value = '';
     el.ghToken.placeholder = c.token ? '•••••• บันทึกไว้แล้ว (เว้นว่างเพื่อใช้ token เดิม)' : 'github_pat_...';
-    if(ghConfigured()) setGhStatus('', 'ตั้งค่าไว้แล้ว: ' + c.repo + (c.branch ? ' (branch ' + c.branch + ')' : '') + ' — กด "บันทึกและทดสอบ" เพื่อตรวจการเชื่อมต่อ');
-    else setGhStatus('hint-warn', 'ยังไม่ได้ตั้งค่า — ข้อมูลจะถูกเก็บในเครื่องนี้เท่านั้น');
+    var hasOwnSetting = false;
+    try{ hasOwnSetting = !!localStorage.getItem(GH_CONFIG_KEY); }catch(e){}
+    if(ghConfigured()){
+      var src = hasOwnSetting ? '' : ' (ค่าเริ่มต้นจากองค์กร)';
+      setGhStatus('', 'ตั้งค่าไว้แล้ว: ' + c.repo + (c.branch ? ' (branch ' + c.branch + ')' : '') + src + ' — กด "บันทึกและทดสอบ" เพื่อตรวจการเชื่อมต่อ');
+    } else {
+      setGhStatus('hint-warn', 'ยังไม่ได้ตั้งค่า — ข้อมูลจะถูกเก็บในเครื่องนี้เท่านั้น');
+    }
   }
 
   el.ghSaveBtn.addEventListener('click', async function(){
@@ -2190,10 +2223,42 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
     showToast('ลบ token ออกจากเครื่องนี้แล้ว', 'success');
   });
 
+  /* ===================== Provision GitHub config via link (no secret in source) =====================
+     Open once with a link like:
+       https://<your-pages-url>/#ghrepo=owner%2Frepo&ghbranch=main&ghtoken=github_pat_xxxxx
+     This saves those values into this device's localStorage (same as filling ⚙ Settings by
+     hand), then immediately scrubs them out of the visible address bar. After that first
+     open, the device remembers the setting — the link never needs to be reopened, and the
+     link itself is never committed to git, so nothing trips GitHub's secret scanning. */
+  function applyGhConfigFromUrl(){
+    try{
+      var hash = window.location.hash || '';
+      if(hash.length < 2) return;
+      var params = new URLSearchParams(hash.slice(1));
+      var repo = params.get('ghrepo');
+      var branch = params.get('ghbranch');
+      var token = params.get('ghtoken');
+      if(repo && token){
+        setGhConfig({repo: normalizeRepo(repo), branch: (branch || 'main').trim(), token: token.trim()});
+        ghCache = {};
+        ghMonths = null;
+        setTimeout(function(){ showToast('ตั้งค่า GitHub จากลิงก์เรียบร้อย', 'success'); }, 300);
+      }
+    }catch(e){
+    }finally{
+      /* Always scrub the hash, even on partial/garbled links, so nothing sensitive
+         lingers in the address bar, browser history, or a screenshot. */
+      try{
+        if(window.location.hash) window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      }catch(e){}
+    }
+  }
+
   window.addEventListener('online', function(){ runSync(false); });
 
   /* ===================== Init ===================== */
   function initToridas(){
+    applyGhConfigFromUrl();
     initHeaderDefaults();
     loadHistory();
     renderMachines();
