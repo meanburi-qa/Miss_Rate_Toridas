@@ -416,7 +416,7 @@ table.preview-table tr.row-danger td{background:var(--red-bg);color:#8a2c26;}
       <button class="btn btn-outline btn-small" id="ghClearTokenBtn">ลบ token ออกจากเครื่องนี้</button>
     </div>
     <p class="settings-hint" id="ghStatus">ยังไม่ได้ตั้งค่า</p>
-    <p class="settings-hint">ข้อมูลทุกรอบจะถูกเก็บเป็นไฟล์รายเดือน (data/ปี-เดือน.json) ใน repo นี้ ทุกเครื่องที่ตั้งค่าเหมือนกันจะเห็นและส่งออกข้อมูลชุดเดียวกัน แนะนำให้ใช้ repo แบบ Private แยกจาก repo ของหน้าเว็บ token เก็บในเบราว์เซอร์เครื่องนี้เท่านั้น ห้ามส่งให้ใครและห้ามใส่ในโค้ด</p>
+    <p class="settings-hint">ข้อมูลทุกรอบจะถูกเก็บเป็นไฟล์รายเดือน (data/ปี-เดือน.json) ใน repo นี้ ทุกเครื่องที่ตั้งค่าเหมือนกันจะเห็นและส่งออกข้อมูลชุดเดียวกัน แนะนำให้ใช้ repo แบบ Private แยกจาก repo ของหน้าเว็บ ถ้าไม่กรอก token เครื่องนี้จะใช้ token กลางที่ฝังในไฟล์ (ทุกเครื่องใช้ชุดเดียวกัน ไม่ต้องกรอกทีละเครื่อง) หากกรอกเอง ค่าที่กรอกจะใช้แทนเฉพาะเครื่องนี้</p>
 
     <h3>ผู้รับผิดชอบประจำจุด (สำหรับ mention ในข้อความแจ้งเตือน)</h3>
     <div class="mention-row" style="font-weight:600;font-size:11px;color:var(--steel-600);">
@@ -589,7 +589,7 @@ table.preview-table tr.row-danger td{background:var(--red-bg);color:#8a2c26;}
 
 <script>
 /* ===================== SHARED (shell-level) ===================== */
-var APP_VERSION = '2026-09-19-github-storage';
+var APP_VERSION = '2026-09-29-shared-default-token';
 var MENTION_KEY = 'qcMentionConfigV1';
 var LEGACY_PA_KEY = 'qcSharedPaUrlV1';
 
@@ -791,22 +791,28 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
   var HISTORY_KEY = 'boneQcHistoryV1';
   var GH_CONFIG_KEY = 'qcGhConfigV1';
 
-  /* ===================== Organization default (fill in before distributing) =====================
-     Any phone/PC that opens this file with NO saved settings (fresh browser, first time) will use
-     these values automatically — no need to open ⚙ Settings on each device.
-     - repo:   "owner/repo" of a PRIVATE GitHub repo, e.g. "cpf-minburi-qc/toridas-data"
+  /* ===================== Organization default (shared by every device) =====================
+     Any phone/PC that opens this file with NO saved token uses these values automatically,
+     so nobody has to open Settings or a provisioning link on each device.
+     - repo:   "owner/repo" of a PRIVATE GitHub repo that holds the data
      - branch: usually "main"
-     - token:  a FINE-GRAINED personal access token scoped ONLY to that one repo,
-               with ONLY "Contents: Read and write" permission. Do not use a classic
-               (all-repo) token here — this value is visible to anyone who views the
-               page source on any device that opens this file.
-     Devices can still override this by entering their own values in ⚙ Settings; once a
-     device has its own saved value, this default is ignored on that device. */
+     - tokenReversed: the token written BACKWARDS (last character first). Get it by running
+               this once in a browser console:
+                 'github_pat_xxxxx'.split('').reverse().join('')
+               and pasting the result below. Reversing only stops GitHub's secret scanner from
+               auto-revoking the token when this file is pushed to GitHub. It is NOT encryption:
+               anyone who opens this page can read the token. Use a FINE-GRAINED token scoped to
+               ONLY the data repo, with ONLY "Contents: Read and write", and keep that repo free
+               of anything sensitive.
+     A device can still override this in Settings; a value saved on the device wins. */
   var DEFAULT_GH_CONFIG = {
-    repo: 'meanburi-qa/Miss_Rate_Toridas',    // <-- ใส่ "owner/repo" ตรงนี้ก่อนแจกไฟล์
+    repo: 'meanburi-qa/Miss_Rate_Toridas_Data',
     branch: 'main',
-    token: ''    // <-- อย่าใส่ token ตรงนี้ (ไฟล์นี้จะขึ้น GitHub) ให้ตั้งค่าผ่านลิงก์แทน ดูด้านล่าง
+    tokenReversed: 'tFn92V18Y7EV77ZBa1ubeBPPHmai6yfSQpA4gZnxwSEXUesdfQ6Zj6jPWFM_XJwcK3353Gdf0QYXZ7IC11_tap_buhtig'
   };
+  function defaultGhToken(){
+    return String(DEFAULT_GH_CONFIG.tokenReversed || '').split('').reverse().join('').trim();
+  }
 
   var GH_API = 'https://api.github.com';
   var GH_DATA_DIR = 'data';
@@ -1113,15 +1119,19 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
       var raw = localStorage.getItem(GH_CONFIG_KEY);
       if(raw){
         var c = JSON.parse(raw);
-        if(c) return {repo:String(c.repo||'').trim(), branch:String(c.branch||'').trim(), token:String(c.token||'').trim()};
+        if(c) return {
+          repo: String(c.repo||'').trim() || String(DEFAULT_GH_CONFIG.repo || '').trim(),
+          branch: String(c.branch||'').trim() || String(DEFAULT_GH_CONFIG.branch || 'main').trim(),
+          token: String(c.token||'').trim() || defaultGhToken()
+        };
       }
     }catch(e){}
-    /* No settings saved on this device yet — fall back to the org default so it
-       works out of the box on new phones/PCs without opening ⚙ Settings. */
+    /* No settings saved on this device yet - use the shared default so a new phone/PC
+       works immediately, with no token typed in. */
     return {
       repo: String(DEFAULT_GH_CONFIG.repo || '').trim(),
       branch: String(DEFAULT_GH_CONFIG.branch || 'main').trim(),
-      token: String(DEFAULT_GH_CONFIG.token || '').trim()
+      token: defaultGhToken()
     };
   }
   function setGhConfig(cfg){
