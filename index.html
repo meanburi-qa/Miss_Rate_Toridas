@@ -180,6 +180,14 @@ select{appearance:none;-webkit-appearance:none;
 .btn-small{padding:9px 13px;font-size:13px;min-height:40px;}
 .btn-text{background:none;color:var(--steel-600);text-decoration:underline;padding:8px 4px;min-height:auto;}
 
+.confirm-backdrop{position:fixed;inset:0;background:rgba(18,24,28,0.55);z-index:120;display:flex;align-items:center;justify-content:center;padding:18px;}
+.confirm-box{background:var(--paper);border-radius:var(--radius);box-shadow:var(--shadow-lift);width:min(100%,380px);padding:20px 18px 16px;border-top:5px solid var(--red);}
+.confirm-box h3{margin:0 0 8px;font-family:var(--font-display);font-size:17px;color:var(--steel-900);}
+.confirm-box p{margin:0 0 6px;font-size:14px;line-height:1.6;color:var(--steel-700);}
+.confirm-box .confirm-detail{background:var(--red-bg);border:1px solid var(--red);border-radius:var(--radius-sm);padding:9px 11px;margin:10px 0;font-size:13.5px;font-weight:600;color:var(--red-deep);}
+.confirm-actions{display:flex;gap:8px;margin-top:14px;}
+.confirm-actions .btn{flex:1;}
+.btn-confirm-danger{background:var(--red);color:#fff;}
 .toast-container{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:80;display:flex;flex-direction:column;gap:8px;width:min(92vw,420px);}
 .toast{background:var(--steel-950);color:#fff;padding:12px 14px;border-radius:var(--radius-sm);font-size:13.5px;
   box-shadow:0 8px 24px rgba(0,0,0,0.2);display:flex;align-items:center;gap:8px;animation:slideDown .2s ease;}
@@ -295,7 +303,7 @@ textarea{min-height:64px;resize:vertical;}
 .history-toggle .car{transition:transform .2s ease;color:var(--steel-600);}
 .history-toggle.open .car{transform:rotate(180deg);}
 .history-content{overflow:hidden;max-height:0;transition:max-height .25s ease;}
-.history-content.open{max-height:600px;overflow-y:auto;margin-top:12px;}
+.history-content.open{max-height:900px;overflow-y:auto;margin-top:12px;}
 .history-batch{border:1px solid var(--steel-100);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;font-size:12.5px;}
 .history-batch-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:6px;}
 .history-batch-head .htitle{font-weight:600;color:var(--ink);}
@@ -306,6 +314,10 @@ textarea{min-height:64px;resize:vertical;}
 .pill.sent{background:var(--green-bg);color:var(--green);}
 .pill.failed{background:var(--red-bg);color:var(--red);}
 .history-machines{display:flex;flex-wrap:wrap;gap:5px;}
+.hist-filter{background:var(--steel-050);border:1px solid var(--steel-100);border-radius:var(--radius-sm);padding:12px;margin-bottom:12px;}
+.hist-filter-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+.hist-filter-btns{display:flex;flex-wrap:wrap;gap:6px;}
+.hist-filter-btns .btn{flex:none;}
 .hchip{font-family:var(--font-mono);font-size:11px;background:var(--steel-50);border:1px solid var(--steel-100);border-radius:6px;padding:2px 6px;}
 .hchip.danger{background:var(--red-bg);border-color:var(--red);color:#8a2c26;}
 .history-empty{color:var(--steel-600);font-size:13px;text-align:center;padding:14px 0;}
@@ -318,6 +330,7 @@ textarea{min-height:64px;resize:vertical;}
 .preview-list{max-height:480px;overflow-y:auto;border:1px solid var(--steel-100);border-radius:var(--radius-sm);}
 .preview-batch{border-bottom:1px solid var(--steel-100);padding:10px 12px;}
 .preview-batch:last-child{border-bottom:none;}
+.preview-batch .history-actions-row{margin-top:8px;}
 .preview-batch-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:6px;}
 .preview-batch-head .htitle{font-weight:600;color:var(--ink);font-size:13px;}
 .preview-batch-head .hmeta{font-family:var(--font-mono);color:var(--steel-600);font-size:11.5px;}
@@ -641,7 +654,7 @@ table.preview-table tr.row-danger td{background:var(--red-bg);color:#8a2c26;}
 
 <script>
 /* ===================== SHARED (shell-level) ===================== */
-var APP_VERSION = '2026-09-30-dash-v2';
+var APP_VERSION = '2026-09-30-date-fmt';
 var MENTION_KEY = 'qcMentionConfigV1';
 var LEGACY_PA_KEY = 'qcSharedPaUrlV1';
 
@@ -838,9 +851,9 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
   };
   var CHECKPOINTS = ['st3','st4','st5','st6','st7','st8','st9'];
   var CHECKPOINT_LABELS = {st3:'St.3',st4:'St.4',st5:'St.5',st6:'St.6',st7:'St.7',st8:'St.8',st9:'St.9'};
-  var THRESHOLD_DANGER = 0.10;
-  var THRESHOLD_WARN = 0.05;
-  var GAUGE_VISUAL_MAX = 0.20;
+  var THRESHOLD_DANGER = 0.04;   // เกิน 4% = แดง (ไม่มีระดับเหลืองแล้ว)
+  var THRESHOLD_WARN = 0.04;
+  var GAUGE_VISUAL_MAX = 0.10;
 
   /* Same key as older versions on purpose, so rows already saved on this device are picked up. */
   var HISTORY_KEY = 'boneQcHistoryV1';
@@ -949,9 +962,10 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
 
   function tierOf(rate){
     if(rate > THRESHOLD_DANGER) return 'danger';
-    if(rate > THRESHOLD_WARN) return 'warn';
     return 'good';
   }
+
+  function overRow(r){ return Number(r.legsIn) > 0 && Number(r.missRate) > THRESHOLD_DANGER; }
 
   function tierColorVar(tier){
     if(tier==='danger') return 'var(--red)';
@@ -993,7 +1007,7 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
     var cp = CHECKPOINTS.map(function(key){
       return '<div class="checkpoint-field">'+
         '<label>'+CHECKPOINT_LABELS[key]+'</label>'+
-        '<input type="number" min="0" step="1" inputmode="numeric" value="0" '+
+        '<input type="number" min="0" step="1" inputmode="numeric" placeholder="0" '+
         'data-machine="'+name+'" data-field="'+key+'" aria-label="'+name+' '+CHECKPOINT_LABELS[key]+'">'+
         '</div>';
     }).join('');
@@ -1057,6 +1071,12 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
     updateMachineCard(machine);
     updateSummary();
   });
+
+  /* คลิก/แตะช่องตัวเลขแล้วเลข 0 ที่ค้างอยู่ (เช่นตอนโหลดข้อมูลมาแก้ไข) หายไปเอง พร้อมพิมพ์ได้เลย */
+  el.machineGrid.addEventListener('focus', function(e){
+    var t = e.target;
+    if(t && t.getAttribute && t.getAttribute('data-field') && t.value === '0') t.value = '';
+  }, true);
 
   el.machineGrid.addEventListener('blur', function(e){
     var t = e.target;
@@ -1124,11 +1144,11 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
       el.alertBanner.classList.add('show');
       var parts = [];
       if(s.exceeded.length > 0){
-        parts.push('พบ <b>'+s.exceeded.length+' เครื่อง</b> เกิน 10%: ' +
+        parts.push('พบ <b>'+s.exceeded.length+' เครื่อง</b> เกิน 4%: ' +
           s.exceeded.map(function(e){ return e.machine+' ('+fmtPct(e.rate)+')'; }).join(', '));
       }
       if(s.lineExceeded){
-        parts.push('เฉลี่ยรวมทั้ง Line เกิน 10% ('+fmtPct(s.avgRate)+')');
+        parts.push('เฉลี่ยรวมทั้ง Line เกิน 4% ('+fmtPct(s.avgRate)+')');
       }
       el.alertBannerText.innerHTML = parts.join(' • ');
     } else {
@@ -1438,13 +1458,21 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
      - รอบที่เครื่องอื่นแก้ไข -> อัปเดตตาม / เครื่องอื่นลบ -> ลบออกจากเครื่องนี้ด้วย
      - ดึงย้อนหลัง 2 เดือน (เดือนก่อน + เดือนนี้); ข้อมูลเก่ากว่านั้นดูได้ที่แท็บส่งออก Excel */
   var pulling = false;
-  async function pullRemoteIntoHistory(){
-    if(!ghConfigured() || pulling || syncing || submitting) return;
+  async function pullRemoteIntoHistory(){ return pullRemoteCore(null, '', false); }
+  /* rangeStart = null -> ใช้ค่าปกติ (ย้อนหลัง 2 เดือน); manual = true -> โยน error ให้ผู้เรียกแสดงเอง */
+  async function pullRemoteCore(rangeStart, endIso, manual){
+    if(!ghConfigured() || pulling || syncing || submitting){
+      if(manual && ghConfigured()) throw new Error('กำลังซิงค์หรือบันทึกอยู่ รอสักครู่แล้วกดใหม่');
+      return;
+    }
     pulling = true;
     try{
-      var d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - 1);
-      var startIso = d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-01';
-      var rows = await loadRemoteRows(startIso, '', true);
+      var startIso = rangeStart;
+      if(startIso === null){
+        var d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - 1);
+        startIso = d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-01';
+      }
+      var rows = await loadRemoteRows(startIso, endIso || '', true);
       if(syncing || submitting) return;      // เริ่มบันทึกระหว่างรอ -> ข้ามรอบนี้ ไม่ให้ชนกับการบันทึก
       var remote = {};
       rows.forEach(function(r){ if(r && r.batchId){ (remote[r.batchId] = remote[r.batchId] || []).push(r); } });
@@ -1468,7 +1496,7 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
       var cutoff = Date.now() - 120000;
       var gone = {};
       history.forEach(function(r){
-        if(r.synced === true && r.remote && (r.dateIso || '') >= startIso && !remote[r.batchId] && Date.parse(r.savedAt) < cutoff) gone[r.batchId] = true;
+        if(r.synced === true && r.remote && (r.dateIso || '') >= startIso && (!endIso || (r.dateIso || '') <= endIso) && !remote[r.batchId] && Date.parse(r.savedAt) < cutoff) gone[r.batchId] = true;
       });
       if(Object.keys(gone).length){
         history = history.filter(function(r){ return !gone[r.batchId]; });
@@ -1481,6 +1509,7 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
       }
     }catch(e){
       /* เงียบไว้ — รอบถัดไปจะลองใหม่เอง (การบันทึกและส่งออกมีข้อความ error ของตัวเอง) */
+      if(manual) throw e;
     }finally{
       pulling = false;
     }
@@ -1762,7 +1791,7 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
     } else if(pushErr){
       showToast('บันทึกในเครื่องนี้แล้ว แต่ส่งขึ้น GitHub ไม่สำเร็จ: ' + errText(pushErr) + ' — กด "ส่งซ้ำ" ในประวัติด้านล่าง', 'error');
     } else if(exceeded){
-      showToast(savedLabel + ' — ' + payload.line + ' เกิน 10%', 'warning');
+      showToast(savedLabel + ' — ' + payload.line + ' เกิน 4%', 'warning');
     } else {
       showToast(savedLabel, 'success');
     }
@@ -1794,6 +1823,14 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
   el.clearFormBtn.addEventListener('click', function(){ clearFullForm(false); });
 
   /* ===================== History rendering ===================== */
+  var histRange = { start:'', end:'' };
+  function rangeText(){
+    function f(iso){ var a = iso.split('-'); return a[2] + '/' + a[1] + '/' + (Number(a[0]) + 543); }
+    if(histRange.start && histRange.end) return f(histRange.start) + ' – ' + f(histRange.end);
+    if(histRange.start) return 'ตั้งแต่ ' + f(histRange.start);
+    return 'ถึง ' + f(histRange.end);
+  }
+
   function renderHistory(){
     var pend = pendingBatchIds();
     if(pend.length > 0){
@@ -1806,26 +1843,36 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
       el.pendingBar.innerHTML = '';
     }
 
-    if(history.length === 0){
+    var ranged = !!(histRange.start || histRange.end);
+    var infoEl = document.getElementById('histRangeInfo');
+    var list = history.filter(function(r){
+      if(histRange.start && (r.dateIso || '') < histRange.start) return false;
+      if(histRange.end && (r.dateIso || '') > histRange.end) return false;
+      return true;
+    });
+    if(list.length === 0){
       el.historyCount.textContent = 0;
-      el.historyList.innerHTML = '<div class="history-empty">ยังไม่มีประวัติการบันทึกในเครื่องนี้</div>';
+      el.historyList.innerHTML = '<div class="history-empty">' + (ranged ? 'ไม่พบข้อมูลในช่วงวันที่ ' + rangeText() : 'ยังไม่มีประวัติการบันทึกในเครื่องนี้') + '</div>';
+      if(infoEl) infoEl.textContent = ranged ? 'ช่วงที่เลือก: ' + rangeText() : '';
       updateSourceNote();
       return;
     }
     var batches = {};
     var order = [];
-    history.forEach(function(row){
+    list.forEach(function(row){
       if(!batches[row.batchId]){ batches[row.batchId]=[]; order.push(row.batchId); }
       batches[row.batchId].push(row);
     });
-    order.reverse();
+    function bkey(bid){ var h = batches[bid][0]; return (h.dateIso || '') + ' ' + (h.time || '') + ' ' + (h.savedAt || ''); }
+    order.sort(function(a,b){ var ka = bkey(a), kb = bkey(b); return ka < kb ? 1 : ka > kb ? -1 : 0; });
     el.historyCount.textContent = order.length;
+    if(infoEl) infoEl.textContent = ranged ? 'ช่วงที่เลือก: ' + rangeText() + ' — พบ ' + order.length + ' รอบ (กด ✎ แก้ไข เพื่อแก้ข้อมูลรอบนั้น)' : 'แสดงรอบล่าสุด — เลือกช่วงวันที่เพื่อดูข้อมูลย้อนหลัง';
 
-    el.historyList.innerHTML = order.slice(0,100).map(function(bid){
+    el.historyList.innerHTML = order.slice(0, ranged ? 500 : 100).map(function(bid){
       var rows = batches[bid];
       var head = rows[0];
-      var exceededChips = rows.filter(function(r){return r.exceeded;});
-      var okChips = rows.filter(function(r){return !r.exceeded;});
+      var exceededChips = rows.filter(function(r){return overRow(r);});
+      var okChips = rows.filter(function(r){return !overRow(r);});
       var allSent = rows.every(function(r){return r.synced === true;});
 
       var chips = exceededChips.map(function(r){
@@ -1908,10 +1955,55 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
     showToast('ยกเลิกการแก้ไขแล้ว', 'success');
   });
 
+  /* ป๊อปอัพยืนยันก่อนลบ (แทน confirm ของเบราว์เซอร์ที่บางเครื่อง/บางแอพไม่แสดง) — ช่องเริ่มต้นโฟกัสที่ "ยกเลิก" กันกดพลาด */
+  function askDeleteConfirm(detailText){
+    return new Promise(function(resolve){
+      var back = document.createElement('div');
+      back.className = 'confirm-backdrop';
+      back.setAttribute('role', 'alertdialog');
+      back.setAttribute('aria-modal', 'true');
+      var box = document.createElement('div');
+      box.className = 'confirm-box';
+      var h = document.createElement('h3'); h.textContent = 'ยืนยันการลบข้อมูล?';
+      var d = document.createElement('div'); d.className = 'confirm-detail'; d.textContent = detailText;
+      var m = document.createElement('p'); m.textContent = 'ข้อมูลรอบนี้จะถูกลบถาวรและหายจากทุกเครื่อง ย้อนกลับไม่ได้';
+      var acts = document.createElement('div'); acts.className = 'confirm-actions';
+      var no = document.createElement('button'); no.type = 'button'; no.className = 'btn btn-outline'; no.textContent = 'ยกเลิก';
+      var yes = document.createElement('button'); yes.type = 'button'; yes.className = 'btn btn-confirm-danger'; yes.textContent = '🗑 ลบเลย';
+      acts.appendChild(no); acts.appendChild(yes);
+      box.appendChild(h); box.appendChild(d); box.appendChild(m); box.appendChild(acts);
+      back.appendChild(box);
+      document.body.appendChild(back);
+      function done(v){ document.removeEventListener('keydown', onKey); back.remove(); resolve(v); }
+      function onKey(ev){ if(ev.key === 'Escape') done(false); }
+      document.addEventListener('keydown', onKey);
+      no.addEventListener('click', function(){ done(false); });
+      yes.addEventListener('click', function(){ done(true); });
+      back.addEventListener('click', function(ev){ if(ev.target === back) done(false); });
+      no.focus();
+    });
+  }
+
+  var deletingBatch = false;
   async function deleteBatch(bid){
     var rows = history.filter(function(r){ return r.batchId === bid; });
     if(rows.length === 0) return;
-    if(!confirm('ยืนยันลบข้อมูลชุดนี้? การลบนี้ไม่สามารถย้อนกลับได้')) return;
+    if(deletingBatch) return;
+    var h0 = rows[0];
+    var ok = await askDeleteConfirm(h0.line + ' • ' + h0.shift + ' • ' + h0.date + ' ' + (h0.time || '') + ' (' + rows.length + ' เครื่อง)');
+    if(!ok) return;
+    deletingBatch = true;
+    try{
+      await deleteBatchNow(bid);
+    }finally{
+      deletingBatch = false;
+    }
+  }
+
+  async function deleteBatchNow(bid){
+    var rows = history.filter(function(r){ return r.batchId === bid; });
+    if(rows.length === 0) return;
+    showToast('กำลังลบข้อมูล…', 'default');
 
     var head = rows[0];
     var hadRemote = rows.some(function(r){ return r.remote; });
@@ -1935,7 +2027,13 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
     history = history.filter(function(r){ return r.batchId !== bid; });
     persistHistory();
     renderHistory();
-    refreshExportIfVisible();
+    /* เอาออกจากรายการที่แสดงอยู่และแคชทันที (ไม่รอโหลดใหม่จาก GitHub) */
+    exportRows = exportRows.filter(function(r){ return r.batchId !== bid; });
+    Object.keys(ghCache).forEach(function(ym){
+      if(ghCache[ym] && ghCache[ym].rows) ghCache[ym] = {rows: ghCache[ym].rows.filter(function(r){ return r.batchId !== bid; })};
+    });
+    renderPreview(exportRows);
+    elExport.rangeInfo.textContent = 'พบ ' + exportRows.length + ' รายการในช่วงที่เลือก' + (ghConfigured() ? '' : ' (เฉพาะในเครื่องนี้)');
     if(editingBatchId === bid) exitEditMode();
     showToast('ลบข้อมูลชุดนี้แล้ว', 'success');
   }
@@ -2012,6 +2110,13 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
 
     var ws = XLSX.utils.aoa_to_sheet([EXPORT_HEADERS].concat(dataRows));
     var range = XLSX.utils.decode_range(ws['!ref']);
+    /* คอลัมน์วันที่: เก็บเป็นเลขวันที่ของ Excel (ชนิด date) แสดงเป็น dd/mm/yyyy */
+    rows.forEach(function(h, i){
+      var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(h.dateIso || '');
+      if(!m) return;
+      var serial = Math.round((Date.UTC(+m[1], +m[2] - 1, +m[3]) - Date.UTC(1899, 11, 30)) / 86400000);
+      ws[XLSX.utils.encode_cell({r:i + 1, c:0})] = {t:'n', v:serial, z:'dd/mm/yyyy'};
+    });
     for(var r=1; r<=range.e.r; r++){
       [12,15].forEach(function(c){
         var ref = XLSX.utils.encode_cell({r:r,c:c});
@@ -2174,7 +2279,7 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
       var brows = batches[bid];
       var head = brows[0];
       var tableRows = brows.map(function(r){
-        return '<tr class="'+(r.exceeded?'row-danger':'')+'">' +
+        return '<tr class="'+(overRow(r)?'row-danger':'')+'">' +
           '<td>'+r.machine+'</td>' +
           '<td>'+r.st3+'</td><td>'+r.st4+'</td><td>'+r.st5+'</td><td>'+r.st6+'</td>' +
           '<td>'+r.st7+'</td><td>'+r.st8+'</td><td>'+r.st9+'</td>' +
@@ -2194,9 +2299,48 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
             '<thead><tr><th>เครื่อง</th><th>St.3</th><th>St.4</th><th>St.5</th><th>St.6</th><th>St.7</th><th>St.8</th><th>St.9</th><th>ขาเข้า</th><th>Miss</th><th>Rate</th></tr></thead>' +
             '<tbody>'+tableRows+'</tbody>' +
           '</table></div>' +
+          '<div class="history-actions-row">' +
+            '<button class="btn btn-outline btn-tiny" data-pedit="'+bid+'">✎ แก้ไข</button>' +
+            '<button class="btn btn-danger-outline btn-tiny" data-pdel="'+bid+'">🗑 ลบ</button>' +
+          '</div>' +
         '</div>';
     }).join('');
   }
+
+  /* ปุ่มแก้ไข/ลบในรายการที่ดูตามช่วงวันที่: ถ้ารอบนั้นยังไม่อยู่ในประวัติเครื่องนี้ (มาจากข้อมูลกลาง) ให้ดึงเข้าประวัติก่อน */
+  function ensureBatchInHistory(bid){
+    var rr = exportRows.filter(function(r){ return r.batchId === bid; });
+    var local = history.filter(function(r){ return r.batchId === bid; });
+    if(rr.length === 0) return local.length > 0;
+    if(local.length){
+      var localPending = local.some(function(x){ return x.synced !== true; });
+      if(localPending || !(String(rr[0].savedAt || '') > String(local[0].savedAt || ''))) return true;
+      history = history.filter(function(x){ return x.batchId !== bid; });
+    }
+    rr.forEach(function(r){
+      var o = Object.assign({}, r);
+      o.synced = true; o.remote = true; if(!o.rev) o.rev = bid;
+      history.push(o);
+    });
+    history.sort(function(a,b){ return String(a.savedAt || '').localeCompare(String(b.savedAt || '')); });
+    persistHistory();
+    renderHistory();
+    return true;
+  }
+
+  elExport.previewList.addEventListener('click', function(e){
+    var eb = e.target.closest('[data-pedit]');
+    if(eb){
+      var bid = eb.getAttribute('data-pedit');
+      if(ensureBatchInHistory(bid)) loadBatchIntoForm(bid);
+      return;
+    }
+    var db = e.target.closest('[data-pdel]');
+    if(db){
+      var bid2 = db.getAttribute('data-pdel');
+      if(ensureBatchInHistory(bid2)) deleteBatch(bid2);
+    }
+  });
 
   /* Reload the Export tab. force=true re-reads everything from GitHub. */
   async function refreshExportTab(force){
@@ -2379,7 +2523,7 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
   /* ===================== Dashboard: AVG Miss rate รายเครื่อง =====================
      1 แท่ง = 1 เครื่อง ของช่วงเวลาที่เลือก (วัน / เดือน / ปี) และสายพาน (Line) ที่เลือก
      AVG = ผลรวมขาที่หลุด ÷ ผลรวมขาที่เข้า ของทุกรอบในช่วงนั้น (ถ่วงน้ำหนักตามจำนวนขา ไม่ใช่เฉลี่ยของเปอร์เซ็นต์รายรอบ)
-     เกิน 4% = แดง (เกณฑ์นี้ใช้เฉพาะหน้า Dashboard หน้าบันทึกยังใช้เกณฑ์เดิม) */
+     เกิน 4% = แดง (หน้าบันทึกใช้เกณฑ์ 4% เช่นกัน) */
   var DASH_RED = 0.04;
   var DASH_MONTHS = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
   var DASH_MODES = [['day','วัน'],['month','เดือน'],['year','ปี']];
