@@ -116,6 +116,27 @@ button, select, input, textarea{font-family:inherit;}
 
 .tab-panel{display:none;max-width:1180px;margin:0 auto;padding:18px 16px 40px;}
 .tab-panel.active{display:block;}
+.dash-lab{font-size:12px;font-weight:600;color:var(--steel-600);margin:0 0 5px;}
+.dash-row{display:flex;flex-wrap:wrap;gap:8px 22px;margin-bottom:12px;}
+.dash-seg{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+.dash-seg button,.dash-seg select,.dash-seg input{min-height:38px;padding:6px 12px;font-size:14px;border-radius:var(--radius-sm);border:1.5px solid var(--steel-300);background:var(--paper);color:var(--steel-900);width:auto;font-family:inherit;}
+.dash-seg button{cursor:pointer;font-weight:600;}
+.dash-seg button.on{background:var(--amber-bg);border-color:var(--amber);color:var(--amber-dark);}
+.dash-seg button.ar{padding:6px 12px;font-size:16px;}
+.dash-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:6px 0 14px;}
+.dash-stats .stat-value.red{color:var(--red);}
+.dash-stats .stat-sub{font-size:11px;color:var(--steel-600);margin-top:2px;}
+.dash-legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--steel-600);margin:0 0 6px;}
+.dash-legend span{display:flex;align-items:center;gap:5px;}
+.dash-legend i{display:inline-block;width:10px;height:10px;border-radius:2px;}
+.dash-chart{position:relative;width:100%;height:340px;}
+.dash-stats{gap:14px;padding:14px 4px;border-top:1px solid var(--steel-100);border-bottom:1px solid var(--steel-100);}
+.dash-stats .d2-lab{font-size:12px;color:var(--steel-600);font-weight:600;}
+.dash-stats .d2-val{font-family:var(--font-mono);font-size:26px;font-weight:600;color:var(--steel-900);margin-top:4px;line-height:1.15;}
+.dash-stats .d2-val.red{color:var(--red);}
+.dash-stats .d2-sub{font-size:11.5px;color:var(--steel-600);margin-top:4px;min-height:1em;}
+@media (max-width:520px){.dash-stats{gap:10px;}.dash-stats .d2-val{font-size:22px;}}
+@media (max-width:520px){.dash-stats{grid-template-columns:1fr;}}
 
 /* ---------- Settings panel (shared) ---------- */
 .settings-panel{max-width:1180px;margin:0 auto;padding:0 16px;overflow:hidden;max-height:0;transition:max-height .25s ease;}
@@ -392,13 +413,15 @@ table.preview-table tr.row-danger td{background:var(--red-bg);color:#8a2c26;}
   </div>
   <div class="tabs">
     <button class="tab-btn active" data-tab="tab-toridas">บันทึกข้อมูล</button>
+    <button class="tab-btn" data-tab="tab-dash">Dashboard</button>
     <button class="tab-btn" data-tab="tab-export">ส่งออก Excel</button>
   </div>
 </div>
 
 <div class="settings-panel" id="settingsPanel">
   <div class="settings-inner">
-    <h3>GitHub — ที่เก็บข้อมูลกลาง</h3>
+    <h3>GitHub Gist — ที่เก็บข้อมูลกลาง (ชุดเดียวกับแอพบันทึกกระดูก)</h3>
+    <div style="display:none">
     <label for="ghRepo">Repo เก็บข้อมูล (รูปแบบ owner/repo)</label>
     <div class="settings-row">
       <input type="text" id="ghRepo" placeholder="meanburi-qa/qc-data" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
@@ -407,16 +430,17 @@ table.preview-table tr.row-danger td{background:var(--red-bg);color:#8a2c26;}
     <div class="settings-row">
       <input type="text" id="ghBranch" placeholder="main" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
     </div>
-    <label for="ghToken">Token (Fine-grained, สิทธิ์ Contents: Read and write)</label>
+    </div>
+    <label for="ghToken">Token (Classic, สิทธิ์ gist) — เว้นว่างเพื่อใช้ token กลาง</label>
     <div class="settings-row">
-      <input type="password" id="ghToken" placeholder="github_pat_..." autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+      <input type="password" id="ghToken" placeholder="ghp_..." autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
     </div>
     <div class="settings-row">
       <button class="btn btn-primary btn-small" id="ghSaveBtn">บันทึกและทดสอบ</button>
       <button class="btn btn-outline btn-small" id="ghClearTokenBtn">ลบ token ออกจากเครื่องนี้</button>
     </div>
     <p class="settings-hint" id="ghStatus">ยังไม่ได้ตั้งค่า</p>
-    <p class="settings-hint">ข้อมูลทุกรอบจะถูกเก็บเป็นไฟล์รายเดือน (data/ปี-เดือน.json) ใน repo นี้ ทุกเครื่องที่ตั้งค่าเหมือนกันจะเห็นและส่งออกข้อมูลชุดเดียวกัน แนะนำให้ใช้ repo แบบ Private แยกจาก repo ของหน้าเว็บ ถ้าไม่กรอก token เครื่องนี้จะใช้ token กลางที่ฝังในไฟล์ (ทุกเครื่องใช้ชุดเดียวกัน ไม่ต้องกรอกทีละเครื่อง) หากกรอกเอง ค่าที่กรอกจะใช้แทนเฉพาะเครื่องนี้</p>
+    <p class="settings-hint">ข้อมูลทุกรอบจะถูกเก็บเป็นไฟล์รายเดือน (miss rate-ปี-เดือน.json) ใน Gist ส่วนตัวใบเดียวกับแอพบันทึกกระดูก ทุกเครื่องเห็นและส่งออกข้อมูลชุดเดียวกัน ประวัติจะดึงข้อมูลใหม่จากส่วนกลางอัตโนมัติทุก ~45 วินาที ถ้าไม่กรอก token เครื่องนี้จะใช้ token กลางที่ฝังในไฟล์ หากกรอกเอง ค่าที่กรอกจะใช้แทนเฉพาะเครื่องนี้</p>
 
     <h3>ผู้รับผิดชอบประจำจุด (สำหรับ mention ในข้อความแจ้งเตือน)</h3>
     <div class="mention-row" style="font-weight:600;font-size:11px;color:var(--steel-600);">
@@ -538,6 +562,34 @@ table.preview-table tr.row-danger td{background:var(--red-bg);color:#8a2c26;}
 </div>
 </div>
 
+<div class="tab-panel" id="tab-dash">
+<main class="container">
+  <section class="card">
+    <h2>AVG Miss rate รายเครื่อง <button class="btn btn-outline btn-tiny" id="dashRefreshBtn" type="button">↻ รีเฟรช</button></h2>
+    <div class="dash-row">
+      <div><div class="dash-lab">สายพาน</div><div class="dash-seg" id="dashLine"></div></div>
+      <div><div class="dash-lab">กะ</div><div class="dash-seg" id="dashShift"></div></div>
+    </div>
+    <div class="dash-row">
+      <div><div class="dash-lab">ดูเป็น</div><div class="dash-seg" id="dashMode"></div></div>
+      <div><div class="dash-lab" id="dashPickLab">เลือกวัน</div><div class="dash-seg" id="dashPick"></div></div>
+    </div>
+    <div class="notice" id="dashNote"></div>
+    <div class="dash-stats">
+      <div><div class="d2-lab" id="dashK1">AVG ทั้งสาย</div><div class="d2-val" id="dashV1">—</div><div class="d2-sub" id="dashS1"></div></div>
+      <div><div class="d2-lab">เครื่องที่สูงสุด</div><div class="d2-val" id="dashV2">—</div><div class="d2-sub"></div></div>
+      <div><div class="d2-lab">เครื่องเกิน 4%</div><div class="d2-val" id="dashV3">—</div><div class="d2-sub"></div></div>
+    </div>
+    <div class="dash-legend">
+      <span><i style="background:var(--green)"></i>ปกติ ไม่เกิน 4%</span>
+      <span><i style="background:var(--red)"></i>เกิน 4%</span>
+    </div>
+    <div class="dash-chart"><canvas id="dashCanvas" role="img" aria-label="กราฟแท่ง AVG Miss rate รายเครื่องของช่วงเวลาที่เลือก"></canvas></div>
+    <p class="settings-hint" id="dashInfo">—</p>
+  </section>
+</main>
+</div>
+
 <div class="tab-panel" id="tab-export">
 <main class="container">
 
@@ -589,7 +641,7 @@ table.preview-table tr.row-danger td{background:var(--red-bg);color:#8a2c26;}
 
 <script>
 /* ===================== SHARED (shell-level) ===================== */
-var APP_VERSION = '2026-09-29-shared-default-token';
+var APP_VERSION = '2026-09-30-dash-v2';
 var MENTION_KEY = 'qcMentionConfigV1';
 var LEGACY_PA_KEY = 'qcSharedPaUrlV1';
 
@@ -626,6 +678,9 @@ document.querySelectorAll('.tab-btn').forEach(function(btn){
     document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
     btn.classList.add('active');
     document.getElementById(btn.getAttribute('data-tab')).classList.add('active');
+    if(btn.getAttribute('data-tab') === 'tab-dash' && typeof window.refreshDashboard === 'function'){
+      window.refreshDashboard(true); // pull the latest data from GitHub when opening the dashboard
+    }
     if(btn.getAttribute('data-tab') === 'tab-export' && typeof window.refreshExportTab === 'function'){
       window.refreshExportTab(true); // always pull the latest data from GitHub when opening this tab
     }
@@ -789,26 +844,16 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
 
   /* Same key as older versions on purpose, so rows already saved on this device are picked up. */
   var HISTORY_KEY = 'boneQcHistoryV1';
-  var GH_CONFIG_KEY = 'qcGhConfigV1';
+  var GH_CONFIG_KEY = 'qcGistConfigV1';   // key ใหม่ — ไม่ใช้ค่า repo/token เก่าที่ค้างในเครื่อง
+  var MIGRATE_KEY = 'qcGistMigratedV1';
 
   /* ===================== Organization default (shared by every device) =====================
-     Any phone/PC that opens this file with NO saved token uses these values automatically,
-     so nobody has to open Settings or a provisioning link on each device.
-     - repo:   "owner/repo" of a PRIVATE GitHub repo that holds the data
-     - branch: usually "main"
-     - tokenReversed: the token written BACKWARDS (last character first). Get it by running
-               this once in a browser console:
-                 'github_pat_xxxxx'.split('').reverse().join('')
-               and pasting the result below. Reversing only stops GitHub's secret scanner from
-               auto-revoking the token when this file is pushed to GitHub. It is NOT encryption:
-               anyone who opens this page can read the token. Use a FINE-GRAINED token scoped to
-               ONLY the data repo, with ONLY "Contents: Read and write", and keep that repo free
-               of anything sensitive.
-     A device can still override this in Settings; a value saved on the device wins. */
+     ใช้ Gist กลาง "ชุดเดียวกับแอพบันทึกกระดูก" (หา Gist จาก description เดียวกัน) และ token ตัวเดียวกัน
+     ทุกเครื่องที่เปิดหน้านี้โดยไม่ได้กรอก token เองจะใช้ค่านี้อัตโนมัติ
+     - tokenReversed: token (classic, scope "gist") เขียนกลับหลัง — กัน secret scanning ตัดสิทธิ์ตอน push เท่านั้น
+       ไม่ใช่การเข้ารหัส ใครเปิดหน้านี้ก็ถอดได้ */
   var DEFAULT_GH_CONFIG = {
-    repo: 'meanburi-qa/Miss_Rate_Toridas_Data',
-    branch: 'main',
-    tokenReversed: 'MBEnb9dZK5RKNFUICIqqhlzt3FDKyKhev5kuCiPpwFeMUMSEzgNYFLC1BTV_JziidTPGzoHu0QYXZ7IC11_tap_buhtig'
+    tokenReversed: 'hM1Y34kHwGhVUvbnsZO8wKXsYm3zUj1RvokE_phg'
   };
   function defaultGhToken(){
     return String(DEFAULT_GH_CONFIG.tokenReversed || '').split('').reverse().join('').trim();
@@ -1101,12 +1146,11 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
     return missing;
   }
 
-  /* ===================== GitHub storage layer =====================
-     Data lives in the data repo as one JSON file per month: data/YYYY-MM.json
-     (an array of rows, one row per machine per round — same shape as the local rows).
-     Every write is: read the month file -> change it -> commit it back (with the file's sha).
-     If someone else committed at the same moment GitHub answers 409, and we re-read and retry.
-     Every change is idempotent by batchId, so re-sending the same round never duplicates it. */
+  /* ===================== GitHub Gist storage layer =====================
+     ข้อมูลอยู่ใน Gist ส่วนตัวใบเดียวกับแอพบันทึกกระดูก เป็นไฟล์รายเดือน miss rate-YYYY-MM.json
+     (แถวละ 1 เครื่องต่อ 1 รอบ) แอพกระดูกอ่าน/เขียนเฉพาะไฟล์ records-YYYY-MM.json จึงไม่ปนกัน
+     ทุกการเขียน: อ่านไฟล์เดือน -> แก้ -> เขียนกลับ -> อ่านซ้ำเพื่อยืนยันว่ารายการอยู่จริง ถ้าไม่อยู่ (โดนเครื่องอื่นเขียนทับ) จะลองใหม่
+     ทุกการแก้ไข idempotent ด้วย batchId จึงส่งซ้ำได้โดยไม่เกิดรายการซ้ำ */
   function GhError(status, message){
     this.name = 'GhError';
     this.status = status;   // 0 = network/timeout, -1 = corrupted data file
@@ -1115,53 +1159,26 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
   GhError.prototype = Object.create(Error.prototype);
 
   function getGhConfig(){
+    var own = '';
     try{
       var raw = localStorage.getItem(GH_CONFIG_KEY);
-      if(raw){
-        var c = JSON.parse(raw);
-        if(c) return {
-          repo: String(c.repo||'').trim() || String(DEFAULT_GH_CONFIG.repo || '').trim(),
-          branch: String(c.branch||'').trim() || String(DEFAULT_GH_CONFIG.branch || 'main').trim(),
-          token: String(c.token||'').trim() || defaultGhToken()
-        };
-      }
+      if(raw){ var c = JSON.parse(raw); if(c && c.token) own = String(c.token).trim(); }
     }catch(e){}
-    /* No settings saved on this device yet - use the shared default so a new phone/PC
-       works immediately, with no token typed in. */
-    return {
-      repo: String(DEFAULT_GH_CONFIG.repo || '').trim(),
-      branch: String(DEFAULT_GH_CONFIG.branch || 'main').trim(),
-      token: defaultGhToken()
-    };
+    return { repo:'', branch:'', token: own || defaultGhToken() };
   }
   function setGhConfig(cfg){
-    try{ localStorage.setItem(GH_CONFIG_KEY, JSON.stringify({repo:cfg.repo, branch:cfg.branch, token:cfg.token})); }catch(e){}
+    try{ localStorage.setItem(GH_CONFIG_KEY, JSON.stringify({token: String(cfg.token||'').trim()})); }catch(e){}
   }
   function ghConfigured(){
-    var c = getGhConfig();
-    return /^[A-Za-z0-9_.\-]+\/[A-Za-z0-9_.\-]+$/.test(c.repo) && c.token.length > 0;
+    return getGhConfig().token.length > 0;
   }
-  function normalizeRepo(s){
-    return String(s||'').trim()
-      .replace(/^https?:\/\/github\.com\//i, '')
-      .replace(/\.git$/i, '')
-      .replace(/^\/+|\/+$/g, '');
-  }
-
   function ghHeaders(extra){
     var h = {
-      'Authorization': 'Bearer ' + getGhConfig().token,
+      'Authorization': 'token ' + getGhConfig().token,
       'Accept': 'application/vnd.github+json'
     };
     if(extra) Object.keys(extra).forEach(function(k){ h[k] = extra[k]; });
     return h;
-  }
-
-  function ghContentsUrl(path, withRef){
-    var cfg = getGhConfig();
-    var url = GH_API + '/repos/' + cfg.repo + '/contents/' + path;
-    if(withRef && cfg.branch) url += '?ref=' + encodeURIComponent(cfg.branch);
-    return url;
   }
 
   async function ghFetch(url, opts){
@@ -1181,15 +1198,15 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
     var detail = '';
     try{ var j = await res.json(); detail = (j && j.message) ? j.message : ''; }catch(e){}
     var st = res.status;
-    if(st === 401) return new GhError(401, 'token ไม่ถูกต้องหรือหมดอายุ — สร้าง token ใหม่แล้ววางใน ⚙ ตั้งค่า');
+    if(st === 401) return new GhError(401, 'token ไม่ถูกต้องหรือหมดอายุ — สร้าง token ใหม่ (สิทธิ์ gist) แล้ววางใน ⚙ ตั้งค่า');
     if(st === 403){
-      if(res.headers.get('x-ratelimit-remaining') === '0') return new GhError(403, 'เรียก GitHub ถี่เกินโควตา รอสักครู่แล้วลองใหม่');
-      return new GhError(403, 'token ไม่มีสิทธิ์เขียน repo นี้ (ต้องตั้ง Contents: Read and write) หรือองค์กรยังไม่อนุมัติ token');
+      if(res.headers.get('x-ratelimit-remaining') === '0') return new GhError(403, 'โควต้า GitHub เต็มชั่วคราว รอสักครู่แล้วลองใหม่');
+      return new GhError(403, 'token ไม่มีสิทธิ์ gist (ต้องเป็น classic token ที่ติ๊ก gist)');
     }
-    if(st === 404) return new GhError(404, 'ไม่พบ repo หรือ branch นี้ หรือ token ไม่ได้เลือก repo นี้ไว้ — ตรวจชื่อ repo ใน ⚙ ตั้งค่า');
-    if(st === 409) return new GhError(409, 'มีคนบันทึกพร้อมกัน (ข้อมูลชนกัน) ลองส่งซ้ำอีกครั้ง');
-    if(st === 422) return new GhError(422, 'GitHub ปฏิเสธคำขอ' + (detail ? ': ' + detail : ''));
-    if(st >= 500) return new GhError(st, 'GitHub ขัดข้องชั่วคราว (' + st + ') ลองใหม่ภายหลัง');
+    if(st === 404) return new GhError(404, 'ไม่พบ Gist หรือ token ไม่มีสิทธิ์เข้าถึง — ตรวจ token ใน ⚙ ตั้งค่า');
+    if(st === 409) return new GhError(409, 'มีคนบันทึกพร้อมกัน (ข้อมูลชนกัน) กด "ส่งใหม่" อีกครั้ง');
+    if(st === 422) return new GhError(422, 'GitHub ปฏิเสธข้อมูล' + (detail ? ': ' + detail : ''));
+    if(st >= 500) return new GhError(st, 'GitHub ขัดข้องชั่วคราว (' + st + ') ลองใหม่อีกครั้ง');
     return new GhError(st, 'GitHub ตอบกลับ ' + st + (detail ? ': ' + detail : ''));
   }
 
@@ -1220,41 +1237,95 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
     if(t === '') return [];
     var data;
     try{ data = JSON.parse(t); }
-    catch(e){ throw new GhError(-1, 'ไฟล์ data/' + ym + '.json บน GitHub อ่านไม่ได้ (รูปแบบเสีย) — ระบบจะไม่เขียนทับ กรุณาตรวจไฟล์ใน repo'); }
-    if(!Array.isArray(data)) throw new GhError(-1, 'ไฟล์ data/' + ym + '.json ไม่ใช่รายการข้อมูล — ระบบจะไม่เขียนทับ กรุณาตรวจไฟล์ใน repo');
+    catch(e){ throw new GhError(-1, 'ไฟล์ miss rate-' + ym + '.json บน GitHub อ่านไม่ได้ (รูปแบบเสีย) — ระบบจะไม่เขียนทับ กรุณาตรวจไฟล์ใน repo'); }
+    if(!Array.isArray(data)) throw new GhError(-1, 'ไฟล์ miss rate-' + ym + '.json ไม่ใช่รายการข้อมูล — ระบบจะไม่เขียนทับ กรุณาตรวจไฟล์ใน repo');
     return data;
   }
 
-  /* Read one month file. Works for files over 1 MB too (GitHub returns no inline
-     content for those, so we fetch the raw file with a second request). */
-  async function ghGetMonth(ym){
-    var url = ghContentsUrl(GH_DATA_DIR + '/' + ym + '.json', true);
-    var res = await ghFetch(url, {headers: ghHeaders()});
-    if(res.status === 404) return {rows: [], sha: null};
-    if(!res.ok) throw await ghErrorFromResponse(res);
-    var meta = await res.json();
-    var text;
-    if(meta.encoding === 'base64' && meta.content){
-      text = b64ToUtf8(meta.content);
-    } else {
-      var raw = await ghFetch(url, {headers: ghHeaders({'Accept': 'application/vnd.github.raw+json'})});
-      if(!raw.ok) throw await ghErrorFromResponse(raw);
-      text = await raw.text();
+  var GIST_DESC = 'bone-inspection-shared-data-v1';   // เหมือนแอพบันทึกกระดูก -> ใช้ Gist ใบเดียวกัน
+  var LS_GIST_ID = 'boneApp::gistId';                  // key เดียวกับแอพกระดูก (ถ้าเปิดจาก origin เดียวกันจะใช้ร่วมกัน)
+  var MONTH_FILE_RE = /^miss rate-(\d{4}-\d{2})\.json$/;
+  var gistIdCache = null;
+
+  /* หา Gist กลาง — ถ้าอ่านรายการไม่ได้จะ throw ไม่สร้างใบใหม่ (กันเกิด Gist ซ้ำแล้วข้อมูลแยกกัน) */
+  async function ghFindGistId(){
+    if(gistIdCache) return gistIdCache;
+    var cached = null;
+    try{ cached = localStorage.getItem(LS_GIST_ID); }catch(e){}
+    if(cached){
+      var r = await ghFetch(GH_API + '/gists/' + cached, {headers: ghHeaders()});
+      if(r.ok){ gistIdCache = cached; return cached; }
+      if(r.status !== 404) throw await ghErrorFromResponse(r);
     }
-    return {rows: parseRows(text, ym), sha: meta.sha};
+    for(var page = 1; page <= 10; page++){
+      var lr = await ghFetch(GH_API + '/gists?per_page=100&page=' + page, {headers: ghHeaders()});
+      if(!lr.ok) throw await ghErrorFromResponse(lr);
+      var list = await lr.json();
+      var found = null;
+      for(var i = 0; i < list.length; i++){ if(list[i].description === GIST_DESC){ found = list[i]; break; } }
+      if(found){
+        gistIdCache = found.id;
+        try{ localStorage.setItem(LS_GIST_ID, found.id); }catch(e){}
+        return found.id;
+      }
+      if(list.length < 100) break;
+    }
+    var cr = await ghFetch(GH_API + '/gists', {
+      method: 'POST',
+      headers: ghHeaders({'Content-Type': 'application/json'}),
+      body: JSON.stringify({description: GIST_DESC, public: false, files: {'records.json': {content: '[]'}}})
+    });
+    if(!cr.ok) throw await ghErrorFromResponse(cr);
+    var created = await cr.json();
+    gistIdCache = created.id;
+    try{ localStorage.setItem(LS_GIST_ID, created.id); }catch(e){}
+    return created.id;
+  }
+
+  /* อ่าน Gist ครั้งเดียว: คืนรายชื่อเดือนที่มีไฟล์ + ข้อความของเดือนที่ want(ym) ขอไว้
+     (ไฟล์ใหญ่เกิน ~1MB GitHub จะตัดเนื้อหา ต้องดึงฉบับเต็มจาก raw_url) */
+  async function ghReadGist(want){
+    var id = await ghFindGistId();
+    var res = await ghFetch(GH_API + '/gists/' + id, {headers: ghHeaders()});
+    if(!res.ok) throw await ghErrorFromResponse(res);
+    var data = await res.json();
+    var files = data.files || {};
+    var months = [], texts = {};
+    for(var name in files){
+      var m = MONTH_FILE_RE.exec(name);
+      if(!m) continue;
+      var ym = m[1];
+      months.push(ym);
+      if(want && !want(ym)) continue;
+      var f = files[name];
+      var text = f.content;
+      if(f.truncated && f.raw_url){
+        var raw = await ghFetch(f.raw_url);
+        if(!raw.ok) throw await ghErrorFromResponse(raw);
+        text = await raw.text();
+      }
+      texts[ym] = text;
+    }
+    months.sort();
+    return {months: months, texts: texts, isPublic: !!data.public, id: id};
+  }
+
+  /* Read one month file. ไม่มีไฟล์ = ยังไม่มีข้อมูลเดือนนั้น (ว่างจริง) แต่ถ้าอ่านล้มเหลวจะ throw ไม่คืนค่าว่างเงียบๆ */
+  async function ghGetMonth(ym){
+    var g = await ghReadGist(function(y){ return y === ym; });
+    return {rows: g.texts[ym] === undefined ? [] : parseRows(g.texts[ym], ym), sha: null};
   }
 
   async function ghPutMonth(ym, rows, sha, message){
-    var cfg = getGhConfig();
-    var body = {message: message, content: utf8ToB64(serializeRows(rows))};
-    if(sha) body.sha = sha;
-    if(cfg.branch) body.branch = cfg.branch;
-    var res = await ghFetch(ghContentsUrl(GH_DATA_DIR + '/' + ym + '.json', false), {
-      method: 'PUT',
+    var id = await ghFindGistId();
+    var files = {};
+    files['miss rate-' + ym + '.json'] = {content: serializeRows(rows)};
+    var res = await ghFetch(GH_API + '/gists/' + id, {
+      method: 'PATCH',
       headers: ghHeaders({'Content-Type': 'application/json'}),
-      body: JSON.stringify(body)
+      body: JSON.stringify({files: files})
     });
-    if(!res.ok) throw await ghErrorFromResponse(res);
+    if(!res.ok) throw await ghErrorFromResponse(res);   // เช็ค ok เสมอ — ไม่แจ้ง "สำเร็จ" ทั้งที่ไม่สำเร็จ
     return true;
   }
 
@@ -1265,31 +1336,35 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
     return run;
   }
 
-  /* Read-modify-write one month file, retrying when another device committed first.
+  function rowSetKey(rows){
+    return rows.map(function(r){ return JSON.stringify(r); }).sort().join('\n');
+  }
+
+  /* Read-modify-write one month file แล้ว "อ่านกลับมายืนยัน"
+     Gist ไม่มี If-Match ให้ล็อกจริง ถ้าเครื่องอื่นเขียนทับระหว่างทางรายการเราจะหายไปจากไฟล์ ->
+     ตรวจเจอตอนอ่านกลับ แล้วเขียนซ้ำ (mutator เป็น idempotent จึงทำซ้ำได้ปลอดภัย)
      mutator(rows) returns the new rows, or null when nothing needs to change. */
   function modifyMonth(ym, mutator, message){
     return withGhLock(async function(){
       var lastErr = null;
-      for(var attempt = 0; attempt < 4; attempt++){
+      for(var attempt = 0; attempt < 5; attempt++){
         var cur = await ghGetMonth(ym);
         var next = mutator(cur.rows.slice());
         if(next === null){
           ghCache[ym] = {rows: cur.rows};
           return cur.rows;
         }
-        try{
-          await ghPutMonth(ym, next, cur.sha, message);
-          ghCache[ym] = {rows: next};
+        await ghPutMonth(ym, next, null, message);
+        await sleep(300);
+        var chk = await ghGetMonth(ym);
+        var again = mutator(chk.rows.slice());
+        if(again === null || rowSetKey(again) === rowSetKey(chk.rows)){
+          ghCache[ym] = {rows: chk.rows};
           if(ghMonths && ghMonths.indexOf(ym) === -1){ ghMonths.push(ym); ghMonths.sort(); }
-          return next;
-        }catch(e){
-          if(e instanceof GhError && (e.status === 409 || e.status === 422)){
-            lastErr = e;
-            await sleep(400 + attempt * 600);
-            continue;
-          }
-          throw e;
+          return chk.rows;
         }
+        lastErr = new GhError(409, 'มีคนบันทึกพร้อมกัน ระบบกำลังลองใหม่');
+        await sleep(400 + attempt * 700 + Math.floor(Math.random() * 400));
       }
       throw lastErr || new GhError(409, 'มีคนบันทึกพร้อมกัน ลองส่งซ้ำอีกครั้ง');
     });
@@ -1297,18 +1372,8 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
 
   /* List which months have a data file. */
   async function ghListMonths(){
-    var res = await ghFetch(ghContentsUrl(GH_DATA_DIR, true), {headers: ghHeaders()});
-    if(res.status === 404){
-      // No data folder yet — or the repo itself is wrong. Check which.
-      var r2 = await ghFetch(GH_API + '/repos/' + getGhConfig().repo, {headers: ghHeaders()});
-      if(!r2.ok) throw await ghErrorFromResponse(r2);
-      return [];
-    }
-    if(!res.ok) throw await ghErrorFromResponse(res);
-    var list = await res.json();
-    if(!Array.isArray(list)) return [];
-    return list.filter(function(f){ return f.type === 'file' && /^\d{4}-\d{2}\.json$/.test(f.name); })
-               .map(function(f){ return f.name.slice(0,7); }).sort();
+    var g = await ghReadGist(function(){ return false; });
+    return g.months;
   }
 
   async function mapPool(items, limit, fn){
@@ -1333,17 +1398,7 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
     });
   }
 
-  /* Rows from GitHub for a date range. force=true re-reads from GitHub instead of using this page's cache. */
-  async function loadRemoteRows(startIso, endIso, force){
-    if(force || !ghMonths) ghMonths = await ghListMonths();
-    var s = startIso ? startIso.slice(0,7) : '';
-    var e = endIso ? endIso.slice(0,7) : '';
-    var months = ghMonths.filter(function(ym){ return (!s || ym >= s) && (!e || ym <= e); });
-    var todo = months.filter(function(ym){ return force || !ghCache[ym]; });
-    await mapPool(todo, 4, async function(ym){
-      var f = await ghGetMonth(ym);
-      ghCache[ym] = {rows: f.rows};
-    });
+  function rowsFromCache(months, startIso, endIso){
     var rows = [];
     months.forEach(function(ym){ rows = rows.concat(ghCache[ym] ? ghCache[ym].rows : []); });
     rows = filterRowsByRange(rows, startIso, endIso);
@@ -1354,21 +1409,81 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
     return rows;
   }
 
+  /* Rows from GitHub for a date range. force=true re-reads from GitHub instead of using this page's cache. */
+  async function loadRemoteRows(startIso, endIso, force){
+    var s = startIso ? startIso.slice(0,7) : '';
+    var e = endIso ? endIso.slice(0,7) : '';
+    function inRange(ym){ return (!s || ym >= s) && (!e || ym <= e); }
+    if(!force && ghMonths){
+      var ms = ghMonths.filter(inRange);
+      if(ms.every(function(ym){ return ghCache[ym]; })) return rowsFromCache(ms, startIso, endIso);
+    }
+    var g = await ghReadGist(function(ym){ return inRange(ym) && (force || !ghCache[ym]); });
+    ghMonths = g.months;
+    var months = g.months.filter(inRange);
+    months.forEach(function(ym){
+      if(g.texts[ym] !== undefined) ghCache[ym] = {rows: parseRows(g.texts[ym], ym)};
+    });
+    return rowsFromCache(months, startIso, endIso);
+  }
+
   async function ghTestConnection(){
-    var cfg = getGhConfig();
-    var res = await ghFetch(GH_API + '/repos/' + cfg.repo, {headers: ghHeaders()});
-    if(res.status === 404) throw new GhError(404, 'ไม่พบ repo "' + cfg.repo + '" — ตรวจชื่อ owner/repo และตรวจว่า token เลือก repo นี้ไว้');
-    if(!res.ok) throw await ghErrorFromResponse(res);
-    var info = await res.json();
-    if(info.permissions && info.permissions.push === false){
-      throw new GhError(403, 'บัญชีนี้ไม่มีสิทธิ์เขียนใน repo นี้');
+    var g = await ghReadGist(function(){ return false; });
+    return {name: 'Gist ' + String(g.id).slice(0,7), isPrivate: !g.isPublic};
+  }
+
+  /* ===================== ดึงข้อมูลกลางเข้าประวัติของเครื่องนี้ =====================
+     ให้ประวัติ/แก้ไข/ลบ เห็นรอบที่เครื่องอื่นบันทึกด้วย (ข้อมูลชุดเดียวกันทุกเครื่อง)
+     - รอบที่ยังไม่ส่งขึ้นกลางจากเครื่องนี้ ชนะเสมอ (ไม่ถูกทับ)
+     - รอบที่เครื่องอื่นแก้ไข -> อัปเดตตาม / เครื่องอื่นลบ -> ลบออกจากเครื่องนี้ด้วย
+     - ดึงย้อนหลัง 2 เดือน (เดือนก่อน + เดือนนี้); ข้อมูลเก่ากว่านั้นดูได้ที่แท็บส่งออก Excel */
+  var pulling = false;
+  async function pullRemoteIntoHistory(){
+    if(!ghConfigured() || pulling || syncing || submitting) return;
+    pulling = true;
+    try{
+      var d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - 1);
+      var startIso = d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-01';
+      var rows = await loadRemoteRows(startIso, '', true);
+      if(syncing || submitting) return;      // เริ่มบันทึกระหว่างรอ -> ข้ามรอบนี้ ไม่ให้ชนกับการบันทึก
+      var remote = {};
+      rows.forEach(function(r){ if(r && r.batchId){ (remote[r.batchId] = remote[r.batchId] || []).push(r); } });
+      var changed = false;
+      Object.keys(remote).forEach(function(bid){
+        var rr = remote[bid];
+        var local = history.filter(function(x){ return x.batchId === bid; });
+        if(local.some(function(x){ return x.synced !== true; })) return;
+        if(local.length){
+          if(!(String(rr[0].savedAt || '') > String(local[0].savedAt || ''))) return;
+          history = history.filter(function(x){ return x.batchId !== bid; });
+        }
+        rr.forEach(function(r){
+          var o = Object.assign({}, r);
+          o.synced = true; o.remote = true; if(!o.rev) o.rev = bid;
+          history.push(o);
+        });
+        changed = true;
+      });
+      // เครื่องอื่นลบรอบไปแล้ว -> เอาออกจากเครื่องนี้ (เฉพาะที่ส่งแล้ว, อยู่ในช่วงที่ดึง, และเก่ากว่า 2 นาที กันอ่านได้ข้อมูลเก่าช่วงเพิ่งเขียน)
+      var cutoff = Date.now() - 120000;
+      var gone = {};
+      history.forEach(function(r){
+        if(r.synced === true && r.remote && (r.dateIso || '') >= startIso && !remote[r.batchId] && Date.parse(r.savedAt) < cutoff) gone[r.batchId] = true;
+      });
+      if(Object.keys(gone).length){
+        history = history.filter(function(r){ return !gone[r.batchId]; });
+        changed = true;
+      }
+      if(changed){
+        history.sort(function(a,b){ return String(a.savedAt || '').localeCompare(String(b.savedAt || '')); });
+        persistHistory();
+        renderHistory();
+      }
+    }catch(e){
+      /* เงียบไว้ — รอบถัดไปจะลองใหม่เอง (การบันทึกและส่งออกมีข้อความ error ของตัวเอง) */
+    }finally{
+      pulling = false;
     }
-    if(cfg.branch){
-      var b = await ghFetch(GH_API + '/repos/' + cfg.repo + '/branches/' + encodeURIComponent(cfg.branch), {headers: ghHeaders()});
-      if(b.status === 404) throw new GhError(404, 'ไม่พบ branch "' + cfg.branch + '" ใน repo นี้');
-      if(!b.ok) throw await ghErrorFromResponse(b);
-    }
-    return {name: info.full_name, isPrivate: !!info.private};
   }
 
   /* ===================== Local history (this device) ===================== */
@@ -1398,6 +1513,15 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
       if(!r.rev) r.rev = r.batchId;
       delete r.submittedOk;
     });
+    /* ย้ายระบบจาก repo เดิมมาเป็น Gist กลาง: ครั้งแรกที่เปิดเวอร์ชันนี้ ให้ถือว่าทุกรอบในเครื่อง "ยังไม่ส่ง"
+       แล้วส่งขึ้น Gist (ปลอดภัย ส่งซ้ำไม่เกิดรายการซ้ำ เพราะใช้ batchId) */
+    try{
+      if(!localStorage.getItem(MIGRATE_KEY)){
+        history.forEach(function(r){ r.synced = false; r.remote = false; });
+        localStorage.setItem(MIGRATE_KEY, '1');
+        persistHistory();
+      }
+    }catch(e){}
     renderHistory();
   }
 
@@ -2164,57 +2288,47 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
 
   function renderGhSettings(){
     var c = getGhConfig();
-    el.ghRepo.value = c.repo;
-    el.ghBranch.value = c.branch || 'main';
+    el.ghRepo.value = '';
+    el.ghBranch.value = '';
     el.ghToken.value = '';
-    el.ghToken.placeholder = c.token ? '•••••• บันทึกไว้แล้ว (เว้นว่างเพื่อใช้ token เดิม)' : 'github_pat_...';
-    var hasOwnSetting = false;
-    try{ hasOwnSetting = !!localStorage.getItem(GH_CONFIG_KEY); }catch(e){}
+    el.ghToken.placeholder = c.token ? 'ตั้งค่าไว้แล้ว (เว้นว่างเพื่อใช้ token เดิม)' : 'ghp_...';
+    var hasOwn = false;
+    try{ var raw = localStorage.getItem(GH_CONFIG_KEY); hasOwn = !!(raw && JSON.parse(raw).token); }catch(e){}
     if(ghConfigured()){
-      var src = hasOwnSetting ? '' : ' (ค่าเริ่มต้นจากองค์กร)';
-      setGhStatus('', 'ตั้งค่าไว้แล้ว: ' + c.repo + (c.branch ? ' (branch ' + c.branch + ')' : '') + src + ' — กด "บันทึกและทดสอบ" เพื่อตรวจการเชื่อมต่อ');
+      setGhStatus('', 'เชื่อมต่อ Gist กลาง' + (hasOwn ? ' (ใช้ token ของเครื่องนี้)' : ' (ใช้ token กลาง)') + ' — กดปุ่มบันทึกเพื่อทดสอบการเชื่อมต่อ');
     } else {
-      setGhStatus('hint-warn', 'ยังไม่ได้ตั้งค่า — ข้อมูลจะถูกเก็บในเครื่องนี้เท่านั้น');
+      setGhStatus('hint-warn', 'ยังไม่ได้ตั้งค่า token — ข้อมูลจะอยู่ในเครื่องนี้จนกว่าจะตั้งค่า');
     }
   }
 
   el.ghSaveBtn.addEventListener('click', async function(){
     var old = getGhConfig();
-    var repo = normalizeRepo(el.ghRepo.value);
-    var branch = el.ghBranch.value.trim() || 'main';
     var token = el.ghToken.value.trim() || old.token;
-
-    if(!/^[A-Za-z0-9_.\-]+\/[A-Za-z0-9_.\-]+$/.test(repo)){
-      setGhStatus('hint-err', 'ชื่อ repo ไม่ถูกต้อง — ต้องเป็นรูปแบบ owner/repo เช่น meanburi-qa/qc-data');
-      return;
-    }
     if(!token){
       setGhStatus('hint-err', 'ยังไม่ได้ใส่ token');
       return;
     }
-
-    setGhConfig({repo: repo, branch: branch, token: token});
+    if(el.ghToken.value.trim()) setGhConfig({token: token});
     ghCache = {};
     ghMonths = null;
-    el.ghRepo.value = repo;
-    el.ghBranch.value = branch;
+    gistIdCache = null;
     el.ghToken.value = '';
-    el.ghToken.placeholder = '•••••• บันทึกไว้แล้ว (เว้นว่างเพื่อใช้ token เดิม)';
+    el.ghToken.placeholder = 'ตั้งค่าไว้แล้ว (เว้นว่างเพื่อใช้ token เดิม)';
 
     el.ghSaveBtn.disabled = true;
     setGhStatus('', 'กำลังทดสอบการเชื่อมต่อ…');
     try{
       var info = await ghTestConnection();
       if(info.isPrivate){
-        setGhStatus('hint-ok', '✓ เชื่อมต่อสำเร็จ: ' + info.name + ' (Private) — สิทธิ์เขียนจะยืนยันเมื่อบันทึกจริงครั้งแรก');
+        setGhStatus('hint-ok', '✓ เชื่อมต่อสำเร็จ: ' + info.name + ' (Private) — ใช้ร่วมกับแอพบันทึกกระดูก');
       } else {
-        setGhStatus('hint-warn', '✓ เชื่อมต่อได้: ' + info.name + ' แต่ repo นี้เป็น Public — ผลตรวจทั้งหมดใครก็เปิดดูได้ แนะนำให้ใช้ repo แบบ Private');
+        setGhStatus('hint-warn', '⚠ เชื่อมต่อได้: ' + info.name + ' แต่เป็น Public — ทุกคนเปิดอ่านข้อมูลได้ ควรใช้ Gist แบบ Private');
       }
-      showToast('ตั้งค่า GitHub สำเร็จ', 'success');
+      showToast('เชื่อมต่อ GitHub สำเร็จ', 'success');
       renderHistory();
-      runSync(false);
+      runSync(false).then(pullRemoteIntoHistory);
     }catch(err){
-      setGhStatus('hint-err', '✕ ' + errText(err));
+      setGhStatus('hint-err', '✗ ' + errText(err));
       showToast('เชื่อมต่อ GitHub ไม่สำเร็จ: ' + errText(err), 'error');
     }finally{
       el.ghSaveBtn.disabled = false;
@@ -2222,49 +2336,314 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
   });
 
   el.ghClearTokenBtn.addEventListener('click', function(){
-    var c = getGhConfig();
-    if(!c.token){ showToast('ไม่มี token ในเครื่องนี้', 'warning'); return; }
-    if(!confirm('ลบ token ออกจากเครื่องนี้? (ข้อมูลที่ยังไม่ส่งจะยังอยู่ในเครื่อง แต่จะส่งไม่ได้จนกว่าจะใส่ token ใหม่)')) return;
-    setGhConfig({repo: c.repo, branch: c.branch, token: ''});
+    var hasOwn = false;
+    try{ var raw = localStorage.getItem(GH_CONFIG_KEY); hasOwn = !!(raw && JSON.parse(raw).token); }catch(e){}
+    if(!hasOwn){ showToast('เครื่องนี้ใช้ token กลางอยู่แล้ว ไม่มี token ของเครื่องนี้ให้ลบ', 'warning'); return; }
+    if(!confirm('ลบ token ที่กรอกไว้ในเครื่องนี้? (เครื่องนี้จะกลับไปใช้ token กลาง)')) return;
+    setGhConfig({token: ''});
     ghCache = {};
     ghMonths = null;
     renderGhSettings();
     renderHistory();
-    showToast('ลบ token ออกจากเครื่องนี้แล้ว', 'success');
+    showToast('ลบ token ของเครื่องนี้แล้ว', 'success');
   });
 
-  /* ===================== Provision GitHub config via link (no secret in source) =====================
-     Open once with a link like:
-       https://<your-pages-url>/#ghrepo=owner%2Frepo&ghbranch=main&ghtoken=github_pat_xxxxx
-     This saves those values into this device's localStorage (same as filling ⚙ Settings by
-     hand), then immediately scrubs them out of the visible address bar. After that first
-     open, the device remembers the setting — the link never needs to be reopened, and the
-     link itself is never committed to git, so nothing trips GitHub's secret scanning. */
+  /* ===================== Provision token via link (optional) =====================
+     เปิดครั้งเดียวด้วยลิงก์ https://<หน้าเว็บ>/#ghtoken=ghp_xxxxx เพื่อบันทึก token ลงเครื่องนี้ แล้วลบออกจากแถบที่อยู่ทันที */
   function applyGhConfigFromUrl(){
     try{
       var hash = window.location.hash || '';
       if(hash.length < 2) return;
       var params = new URLSearchParams(hash.slice(1));
-      var repo = params.get('ghrepo');
-      var branch = params.get('ghbranch');
       var token = params.get('ghtoken');
-      if(repo && token){
-        setGhConfig({repo: normalizeRepo(repo), branch: (branch || 'main').trim(), token: token.trim()});
+      if(token){
+        setGhConfig({token: token.trim()});
         ghCache = {};
         ghMonths = null;
-        setTimeout(function(){ showToast('ตั้งค่า GitHub จากลิงก์เรียบร้อย', 'success'); }, 300);
+        gistIdCache = null;
+        setTimeout(function(){ showToast('ตั้งค่า token ของเครื่องนี้แล้ว', 'success'); }, 300);
       }
     }catch(e){
     }finally{
-      /* Always scrub the hash, even on partial/garbled links, so nothing sensitive
-         lingers in the address bar, browser history, or a screenshot. */
       try{
         if(window.location.hash) window.history.replaceState(null, '', window.location.pathname + window.location.search);
       }catch(e){}
     }
   }
 
-  window.addEventListener('online', function(){ runSync(false); });
+  window.addEventListener('online', function(){ runSync(false).then(pullRemoteIntoHistory); });
+  document.addEventListener('visibilitychange', function(){ if(!document.hidden) pullRemoteIntoHistory(); });
+  setInterval(function(){ if(!document.hidden) pullRemoteIntoHistory(); }, 45000);
+
+
+  /* ===================== Dashboard: AVG Miss rate รายเครื่อง =====================
+     1 แท่ง = 1 เครื่อง ของช่วงเวลาที่เลือก (วัน / เดือน / ปี) และสายพาน (Line) ที่เลือก
+     AVG = ผลรวมขาที่หลุด ÷ ผลรวมขาที่เข้า ของทุกรอบในช่วงนั้น (ถ่วงน้ำหนักตามจำนวนขา ไม่ใช่เฉลี่ยของเปอร์เซ็นต์รายรอบ)
+     เกิน 4% = แดง (เกณฑ์นี้ใช้เฉพาะหน้า Dashboard หน้าบันทึกยังใช้เกณฑ์เดิม) */
+  var DASH_RED = 0.04;
+  var DASH_MONTHS = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  var DASH_MODES = [['day','วัน'],['month','เดือน'],['year','ปี']];
+  var DASH_SHIFTS = [['','ทุกกะ'],['กะ 1','กะ 1'],['กะ 2','กะ 2']];
+  var dash = { line:'', mode:'day', shift:'', iso:'' };
+  var dashSeq = 0;
+  var dashChart = null;
+  var dashChartPromise = null;
+
+  function dashParse(iso){ var a = String(iso).split('-').map(Number); return new Date(a[0], (a[1]||1)-1, a[2]||1); }
+  function dashIso(d){ return d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate()); }
+  function dashShift(iso, mode, dir){
+    var d = dashParse(iso);
+    if(mode === 'day') d.setDate(d.getDate() + dir);
+    else if(mode === 'month'){ d.setDate(1); d.setMonth(d.getMonth() + dir); }
+    else { d.setDate(1); d.setMonth(0); d.setFullYear(d.getFullYear() + dir); }
+    return dashIso(d);
+  }
+  function dashKey(iso, mode){ return mode === 'day' ? iso : mode === 'month' ? iso.slice(0,7) : iso.slice(0,4); }
+  function dashLabel(iso, mode){
+    var d = dashParse(iso);
+    if(mode === 'day') return d.getDate() + ' ' + DASH_MONTHS[d.getMonth()] + ' ' + (d.getFullYear()+543);
+    if(mode === 'month') return DASH_MONTHS[d.getMonth()] + ' ' + (d.getFullYear()+543);
+    return 'ปี ' + (d.getFullYear()+543);
+  }
+  function dashPct(v){ return (v * 100).toFixed(1) + '%'; }
+  function dashCss(name, fallback){
+    var v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return v || fallback;
+  }
+
+  function dashButtons(id, items, cur, fn){
+    var box = document.getElementById(id);
+    box.innerHTML = '';
+    items.forEach(function(it){
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = it[1];
+      if(it[0] === cur) b.className = 'on';
+      b.addEventListener('click', function(){ fn(it[0]); });
+      box.appendChild(b);
+    });
+  }
+
+  function dashRenderControls(){
+    var lines = Object.keys(LINE_MACHINES);
+    dashButtons('dashLine', lines.map(function(k){ return [k,k]; }), dash.line, function(k){ dash.line = k; dashChanged(); });
+    dashButtons('dashShift', DASH_SHIFTS, dash.shift, function(k){ dash.shift = k; dashChanged(); });
+    dashButtons('dashMode', DASH_MODES, dash.mode, function(k){ dash.mode = k; dashChanged(); });
+
+    var modeName = DASH_MODES.filter(function(m){ return m[0] === dash.mode; })[0][1];
+    document.getElementById('dashPickLab').textContent = 'เลือก' + modeName;
+    var box = document.getElementById('dashPick');
+    box.innerHTML = '';
+    var today = todayIsoLocal();
+
+    var prev = document.createElement('button');
+    prev.type = 'button'; prev.className = 'ar'; prev.textContent = '‹'; prev.setAttribute('aria-label', 'ก่อนหน้า');
+    prev.addEventListener('click', function(){ dash.iso = dashShift(dash.iso, dash.mode, -1); dashChanged(); });
+
+    var next = document.createElement('button');
+    next.type = 'button'; next.className = 'ar'; next.textContent = '›'; next.setAttribute('aria-label', 'ถัดไป');
+    next.addEventListener('click', function(){
+      var n = dashShift(dash.iso, dash.mode, 1);
+      if(n <= today){ dash.iso = n; dashChanged(); }
+    });
+
+    var inp;
+    if(dash.mode === 'year'){
+      inp = document.createElement('select');
+      var cy = new Date().getFullYear();
+      for(var y = cy; y >= cy - 4; y--){
+        var o = document.createElement('option');
+        o.value = y; o.textContent = 'พ.ศ. ' + (y + 543);
+        if(y === dashParse(dash.iso).getFullYear()) o.selected = true;
+        inp.appendChild(o);
+      }
+      inp.addEventListener('change', function(){
+        var n = inp.value + '-01-01';
+        dash.iso = n > today ? today : n;
+        dashChanged();
+      });
+    } else {
+      inp = document.createElement('input');
+      inp.type = dash.mode === 'day' ? 'date' : 'month';
+      inp.max = dash.mode === 'day' ? today : today.slice(0,7);
+      inp.value = dash.mode === 'day' ? dash.iso : dash.iso.slice(0,7);
+      inp.addEventListener('change', function(){
+        if(!inp.value) return;
+        var n = dash.mode === 'day' ? inp.value : inp.value + '-01';
+        dash.iso = n > today ? today : n;
+        dashChanged();
+      });
+    }
+    box.appendChild(prev); box.appendChild(inp); box.appendChild(next);
+  }
+
+  function dashChanged(){ dashRenderControls(); refreshDashboard(false); }
+
+  function dashLoadChartLib(){
+    if(typeof Chart !== 'undefined') return Promise.resolve();
+    if(dashChartPromise) return dashChartPromise;
+    var srcs = [
+      'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js',
+      'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js'
+    ];
+    var attempt = function(i){
+      if(typeof Chart !== 'undefined') return Promise.resolve();
+      if(i >= srcs.length) return Promise.reject(new Error('โหลดไลบรารีกราฟไม่สำเร็จ — ตรวจอินเทอร์เน็ตแล้วกด รีเฟรช'));
+      return loadScriptOnce(srcs[i], 8000).then(function(){ return typeof Chart !== 'undefined' ? null : attempt(i+1); }).catch(function(){ return attempt(i+1); });
+    };
+    dashChartPromise = attempt(0).catch(function(e){ dashChartPromise = null; throw e; });
+    return dashChartPromise;
+  }
+
+  /* rows ของช่วงที่เลือก + ช่วงก่อนหน้า: จาก GitHub เป็นหลัก แล้วเติมรอบในเครื่องที่ยังไม่ได้ส่ง (จะได้เห็นรอบที่เพิ่งบันทึกเอง) */
+  async function dashLoadRows(force){
+    var start = dashShift(dash.iso, dash.mode, -1);
+    var end = dash.mode === 'day' ? dash.iso : dash.mode === 'month' ? dash.iso.slice(0,7) + '-31' : dash.iso.slice(0,4) + '-12-31';
+    if(!ghConfigured()) return { rows: filterRowsByRange(history, start, end), remote: false };
+    var rows = await loadRemoteRows(start, end, !!force);
+    rows = rows.slice();
+    var have = {};
+    rows.forEach(function(r){ have[r.batchId] = true; });
+    history.forEach(function(r){
+      if(r.synced !== true && !have[r.batchId] && r.dateIso >= start && r.dateIso <= end) rows.push(r);
+    });
+    return { rows: rows, remote: true };
+  }
+
+  function dashAggregate(rows, key){
+    var machines = LINE_MACHINES[dash.line] || [];
+    var agg = {};
+    machines.forEach(function(m){ agg[m] = { miss:0, legs:0 }; });
+    rows.forEach(function(r){
+      if(r.line !== dash.line) return;
+      if(dash.shift && r.shift !== dash.shift) return;
+      if(dashKey(r.dateIso || '', dash.mode) !== key) return;
+      var a = agg[r.machine];
+      if(!a) return;
+      a.legs += Number(r.legsIn) || 0;
+      a.miss += Number(r.missCount) || 0;
+    });
+    return machines.map(function(m){
+      var a = agg[m];
+      return { machine:m, legs:a.legs, miss:a.miss, rate: a.legs > 0 ? a.miss / a.legs : null };
+    });
+  }
+
+  var dashLabelPlugin = {
+    id: 'dashLabels',
+    afterDatasetsDraw: function(c){
+      var ctx = c.ctx, a = c.chartArea, y = c.scales.y;
+      var py = y.getPixelForValue(DASH_RED * 100);
+      ctx.save();
+      ctx.strokeStyle = dashCss('--red', '#c0392b');
+      ctx.globalAlpha = 0.7; ctx.setLineDash([5,4]); ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(a.left, py); ctx.lineTo(a.right, py); ctx.stroke();
+      ctx.restore();
+      ctx.save();
+      ctx.fillStyle = dashCss('--ink', '#1b2328');
+      ctx.font = '600 12px sans-serif'; ctx.textAlign = 'center';
+      var data = c.data.datasets[0].data;
+      c.getDatasetMeta(0).data.forEach(function(b, i){
+        if(data[i] == null) ctx.fillText('—', b.x, y.getPixelForValue(0) - 6);
+        else ctx.fillText(data[i].toFixed(1) + '%', b.x, b.y - 6);
+      });
+      ctx.restore();
+    }
+  };
+
+  function dashRender(rows, remote){
+    var key = dashKey(dash.iso, dash.mode);
+    var pkey = dashKey(dashShift(dash.iso, dash.mode, -1), dash.mode);
+    var cur = dashAggregate(rows, key);
+    var prv = dashAggregate(rows, pkey);
+    var totLegs = 0, totMiss = 0, pLegs = 0, pMiss = 0;
+    cur.forEach(function(x){ totLegs += x.legs; totMiss += x.miss; });
+    prv.forEach(function(x){ pLegs += x.legs; pMiss += x.miss; });
+    var modeName = DASH_MODES.filter(function(m){ return m[0] === dash.mode; })[0][1];
+
+    document.getElementById('dashK1').textContent = 'AVG ทั้งสาย · ' + dashLabel(dash.iso, dash.mode);
+    var v1 = document.getElementById('dashV1'), s1 = document.getElementById('dashS1');
+    var v2 = document.getElementById('dashV2'), v3 = document.getElementById('dashV3');
+    var withData = cur.filter(function(x){ return x.rate != null; });
+    if(totLegs > 0){
+      var avg = totMiss / totLegs;
+      v1.textContent = dashPct(avg);
+      v1.className = 'd2-val' + (avg > DASH_RED ? ' red' : '');
+      if(pLegs > 0){
+        var dl = avg - pMiss / pLegs;
+        s1.textContent = (dl > 0 ? '▲ ' : dl < 0 ? '▼ ' : '') + Math.abs(dl * 100).toFixed(1) + ' จาก' + modeName + 'ก่อนหน้า';
+      } else s1.textContent = 'ไม่มีข้อมูล' + modeName + 'ก่อนหน้า';
+      var worst = withData.slice().sort(function(a,b){ return b.rate - a.rate; })[0];
+      v2.textContent = worst.machine + ' · ' + dashPct(worst.rate);
+      v2.className = 'd2-val' + (worst.rate > DASH_RED ? ' red' : '');
+      var over = withData.filter(function(x){ return x.rate > DASH_RED; }).length;
+      v3.textContent = over + ' จาก ' + withData.length;
+      v3.className = 'd2-val' + (over > 0 ? ' red' : '');
+    } else {
+      v1.textContent = '—'; v1.className = 'd2-val'; s1.textContent = '';
+      v2.textContent = '—'; v2.className = 'd2-val'; v3.textContent = '—'; v3.className = 'd2-val';
+    }
+
+    var data = cur.map(function(x){ return x.rate == null ? null : +(x.rate * 100).toFixed(2); });
+    var top = Math.max(6, Math.ceil(Math.max.apply(null, data.map(function(v){ return v || 0; })) + 1));
+    var green = dashCss('--green', '#3f7d5c'), red = dashCss('--red', '#c0392b');
+    if(dashChart) dashChart.destroy();
+    dashChart = new Chart(document.getElementById('dashCanvas').getContext('2d'), {
+      type: 'bar',
+      plugins: [dashLabelPlugin],
+      data: { labels: cur.map(function(x){ return x.machine; }),
+        datasets: [{ label:'AVG Miss rate', data:data, borderRadius:4, maxBarThickness:40,
+          backgroundColor: data.map(function(v){ return v != null && v > DASH_RED * 100 ? red : green; }) }] },
+      options: { responsive:true, maintainAspectRatio:false, layout:{ padding:{ top:18 } },
+        plugins: { legend:{ display:false }, tooltip:{ callbacks:{
+          label: function(c){
+            var x = cur[c.dataIndex];
+            return x.rate == null ? 'ไม่มีข้อมูล' : 'AVG ' + dashPct(x.rate) + ' (หลุด ' + x.miss + ' / เข้า ' + x.legs + ' ขา)';
+          },
+          afterLabel: function(c){
+            var p = prv[c.dataIndex];
+            return p.rate == null ? '' : modeName + 'ก่อนหน้า ' + dashPct(p.rate);
+          } } } },
+        scales: {
+          y: { beginAtZero:true, max:top, ticks:{ callback:function(v){ return v + '%'; }, color:dashCss('--steel-600', '#57676f') }, grid:{ color:dashCss('--steel-100', '#e7ecee') } },
+          x: { ticks:{ color:dashCss('--steel-600', '#57676f'), font:{ size:13 } }, grid:{ display:false } }
+        } }
+    });
+
+    document.getElementById('dashInfo').textContent = totLegs > 0
+      ? dash.line + ' · ' + dashLabel(dash.iso, dash.mode) + (dash.shift ? ' · ' + dash.shift : ' · ทุกกะ') + ' — รวมขาที่เข้า ' + totLegs.toLocaleString() + ' ขา ' + (remote ? '(ข้อมูลกลางจาก GitHub)' : '(เฉพาะในเครื่องนี้)')
+      : 'ไม่มีข้อมูลของ ' + dash.line + ' ในช่วงที่เลือก';
+  }
+
+  async function refreshDashboard(force){
+    var seq = ++dashSeq;
+    var info = document.getElementById('dashInfo');
+    var note = document.getElementById('dashNote');
+    if(!ghConfigured()){
+      note.className = 'notice warn show';
+      note.innerHTML = '<span>ยังไม่ได้ตั้งค่า GitHub — Dashboard แสดงเฉพาะข้อมูลในเครื่องนี้</span>';
+    } else {
+      note.className = 'notice'; note.innerHTML = '';
+    }
+    info.textContent = 'กำลังโหลดข้อมูล…';
+    try{
+      var res = await dashLoadRows(force);
+      await dashLoadChartLib();
+      if(seq !== dashSeq) return;
+      dashRender(res.rows, res.remote);
+    }catch(err){
+      if(seq !== dashSeq) return;
+      info.textContent = 'โหลดข้อมูลไม่สำเร็จ: ' + errText(err) + ' — กด "↻ รีเฟรช" เพื่อลองใหม่';
+    }
+  }
+  window.refreshDashboard = refreshDashboard;
+
+  document.getElementById('dashRefreshBtn').addEventListener('click', function(){ refreshDashboard(true); });
+  (function dashInit(){
+    dash.line = Object.keys(LINE_MACHINES)[0];
+    dash.iso = todayIsoLocal();
+    dashRenderControls();
+  })();
 
   /* ===================== Init ===================== */
   function initToridas(){
@@ -2277,7 +2656,7 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
     renderGhSettings();
     updateSourceNote();
     // Upload anything still pending (including rounds saved by older versions of this page).
-    if(ghConfigured()) runSync(false);
+    if(ghConfigured()) runSync(false).then(pullRemoteIntoHistory);
   }
   initToridas();
 
