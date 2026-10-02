@@ -500,9 +500,9 @@ table.preview-table tr.row-danger td{background:var(--red-bg);color:#8a2c26;}
         <label for="lineSelect">Line</label>
         <select id="lineSelect" class="placeholder-active">
           <option value="">— เลือก Line —</option>
-          <option value="Line 6">Line 6 (6 เครื่อง)</option>
-          <option value="Line 8">Line 8 (8 เครื่อง)</option>
-          <option value="Line S6">Line S6 (2 เครื่อง)</option>
+          <option value="Line 6">Cut up: Line 6 (6 เครื่อง)</option>
+          <option value="Line 8">Cut up: Line 8 (8 เครื่อง)</option>
+          <option value="Line S6">S6 (2 เครื่อง)</option>
         </select>
       </div>
       <div class="field">
@@ -662,7 +662,7 @@ table.preview-table tr.row-danger td{background:var(--red-bg);color:#8a2c26;}
 
 <script>
 /* ===================== SHARED (shell-level) ===================== */
-var APP_VERSION = '2026-09-30-period';
+var APP_VERSION = '2026-09-30-line-label';
 var MENTION_KEY = 'qcMentionConfigV1';
 var LEGACY_PA_KEY = 'qcSharedPaUrlV1';
 
@@ -857,6 +857,13 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
     'Line 8': ['R-1','R-2','R-3','R-4','L-1','L-2','L-3','L-4'],
     'Line S6': ['R-1','L-1']
   };
+  /* ชื่อ Line ที่แสดงในแอพและเขียนลง Excel (ค่าที่เก็บข้อมูลยังเป็นชื่อเดิม 'Line 6' ฯลฯ จึงไม่กระทบข้อมูลเก่า) */
+  var LINE_NAMES = {'Line 6':'Cut up: Line 6', 'Line 8':'Cut up: Line 8', 'Line S6':'S6'};
+  function lineLabel(l){
+    var n = LINE_NAMES[l] || l;
+    var c = (LINE_MACHINES[l] || []).length;
+    return c ? n + ' (' + c + ' เครื่อง)' : n;
+  }
   var CHECKPOINTS = ['st3','st4','st5','st6','st7','st8','st9'];
   var CHECKPOINT_LABELS = {st3:'St.3',st4:'St.4',st5:'St.5',st6:'St.6',st7:'St.7',st8:'St.8',st9:'St.9'};
   var THRESHOLD_DANGER = 0.04;   // เกิน 4% = แดง (ไม่มีระดับเหลืองแล้ว)
@@ -1802,7 +1809,7 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
     } else if(pushErr){
       showToast('บันทึกในเครื่องนี้แล้ว แต่ส่งขึ้น GitHub ไม่สำเร็จ: ' + errText(pushErr) + ' — กด "ส่งซ้ำ" ในประวัติด้านล่าง', 'error');
     } else if(exceeded){
-      showToast(savedLabel + ' — ' + payload.line + ' เกิน 4%', 'warning');
+      showToast(savedLabel + ' — ' + lineLabel(payload.line) + ' เกิน 4%', 'warning');
     } else {
       showToast(savedLabel, 'success');
     }
@@ -1896,7 +1903,7 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
       return '' +
         '<div class="history-batch" data-batch-id="'+bid+'">' +
           '<div class="history-batch-head">' +
-            '<span class="htitle">'+head.line+' • '+head.shift+(head.period ? ' • '+head.period : '')+'</span>' +
+            '<span class="htitle">'+lineLabel(head.line)+' • '+head.shift+(head.period ? ' • '+head.period : '')+'</span>' +
             '<span class="hmeta">'+head.date+' '+head.time+'</span>' +
           '</div>' +
           '<div class="history-batch-head">' +
@@ -2003,7 +2010,7 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
     if(rows.length === 0) return;
     if(deletingBatch) return;
     var h0 = rows[0];
-    var ok = await askDeleteConfirm(h0.line + ' • ' + h0.shift + (h0.period ? ' • ' + h0.period : '') + ' • ' + h0.date + ' ' + (h0.time || '') + ' (' + rows.length + ' เครื่อง)');
+    var ok = await askDeleteConfirm(lineLabel(h0.line) + ' • ' + h0.shift + (h0.period ? ' • ' + h0.period : '') + ' • ' + h0.date + ' ' + (h0.time || ''));
     if(!ok) return;
     deletingBatch = true;
     try{
@@ -2116,7 +2123,7 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
     }
 
     var dataRows = rows.map(function(h){
-      return [h.date, h.time||'', h.shift, h.period||'', h.line, h.machine,
+      return [h.date, h.time||'', h.shift, h.period||'', lineLabel(h.line), h.machine,
         h.st3,h.st4,h.st5,h.st6,h.st7,h.st8,h.st9,
         h.missRate, h.legsIn, h.missCount, h.avgLineRate, h.notes||''];
     });
@@ -2304,7 +2311,7 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
       return '' +
         '<div class="preview-batch">' +
           '<div class="preview-batch-head">' +
-            '<span class="htitle">'+head.line+' • '+head.shift+(head.period ? ' • '+head.period : '')+'</span>' +
+            '<span class="htitle">'+lineLabel(head.line)+' • '+head.shift+(head.period ? ' • '+head.period : '')+'</span>' +
             '<span class="hmeta">'+head.date+' '+(head.time||'')+' • AVG '+fmtPct(head.avgLineRate)+'</span>' +
           '</div>' +
           (head.notes ? '<div class="hmeta" style="font-family:var(--font-body);color:var(--steel-600);margin-bottom:4px;">หมายเหตุ: '+head.notes+'</div>' : '') +
@@ -2583,7 +2590,7 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
 
   function dashRenderControls(){
     var lines = Object.keys(LINE_MACHINES);
-    dashButtons('dashLine', lines.map(function(k){ return [k,k]; }), dash.line, function(k){ dash.line = k; dashChanged(); });
+    dashButtons('dashLine', lines.map(function(k){ return [k,lineLabel(k)]; }), dash.line, function(k){ dash.line = k; dashChanged(); });
     dashButtons('dashShift', DASH_SHIFTS, dash.shift, function(k){ dash.shift = k; dashChanged(); });
     dashButtons('dashMode', DASH_MODES, dash.mode, function(k){ dash.mode = k; dashChanged(); });
 
@@ -2768,8 +2775,8 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
     });
 
     document.getElementById('dashInfo').textContent = totLegs > 0
-      ? dash.line + ' · ' + dashLabel(dash.iso, dash.mode) + (dash.shift ? ' · ' + dash.shift : ' · ทุกกะ') + ' — รวมขาที่เข้า ' + totLegs.toLocaleString() + ' ขา ' + (remote ? '(ข้อมูลกลางจาก GitHub)' : '(เฉพาะในเครื่องนี้)')
-      : 'ไม่มีข้อมูลของ ' + dash.line + ' ในช่วงที่เลือก';
+      ? lineLabel(dash.line) + ' · ' + dashLabel(dash.iso, dash.mode) + (dash.shift ? ' · ' + dash.shift : ' · ทุกกะ') + ' — รวมขาที่เข้า ' + totLegs.toLocaleString() + ' ขา ' + (remote ? '(ข้อมูลกลางจาก GitHub)' : '(เฉพาะในเครื่องนี้)')
+      : 'ไม่มีข้อมูลของ ' + lineLabel(dash.line) + ' ในช่วงที่เลือก';
   }
 
   async function refreshDashboard(force){
