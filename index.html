@@ -513,6 +513,14 @@ table.preview-table tr.row-danger td{background:var(--red-bg);color:#8a2c26;}
           <option value="กะ 2">กะ 2</option>
         </select>
       </div>
+      <div class="field">
+        <label for="periodSelect">ช่วงเวลา</label>
+        <select id="periodSelect" class="placeholder-active">
+          <option value="">— เลือกช่วงเวลา —</option>
+          <option value="พักกะ">พักกะ</option>
+          <option value="เลิกกะ">เลิกกะ</option>
+        </select>
+      </div>
     </div>
   </section>
 
@@ -654,7 +662,7 @@ table.preview-table tr.row-danger td{background:var(--red-bg);color:#8a2c26;}
 
 <script>
 /* ===================== SHARED (shell-level) ===================== */
-var APP_VERSION = '2026-09-30-date-fmt';
+var APP_VERSION = '2026-09-30-period';
 var MENTION_KEY = 'qcMentionConfigV1';
 var LEGACY_PA_KEY = 'qcSharedPaUrlV1';
 
@@ -898,6 +906,7 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
     timeInput: document.getElementById('timeInput'),
     lineSelect: document.getElementById('lineSelect'),
     shiftSelect: document.getElementById('shiftSelect'),
+    periodSelect: document.getElementById('periodSelect'),
     machineGrid: document.getElementById('machineGrid'),
     machineCountLabel: document.getElementById('machineCountLabel'),
     sumLegsIn: document.getElementById('sumLegsIn'),
@@ -996,7 +1005,7 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
     updateThaiDateHint();
   }
 
-  [el.lineSelect, el.shiftSelect].forEach(function(sel){
+  [el.lineSelect, el.shiftSelect, el.periodSelect].forEach(function(sel){
     sel.addEventListener('change', function(){
       sel.classList.toggle('placeholder-active', sel.value === '');
     });
@@ -1161,6 +1170,7 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
     var missing = [];
     if(!el.lineSelect.value) missing.push('Line');
     if(!el.shiftSelect.value) missing.push('กะ');
+    if(!el.periodSelect.value) missing.push('ช่วงเวลา');
     if(!el.dateInput.value) missing.push('วันที่');
     if(Object.keys(currentMachines).length === 0) missing.push('ข้อมูลเครื่อง (กรุณาเลือก Line)');
     return missing;
@@ -1581,7 +1591,7 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
       var row = {
         batchId:batchId,
         date:payload.date, dateIso:payload.dateIso, time:payload.time,
-        shift:payload.shift, line:payload.line,
+        shift:payload.shift, period:payload.period, line:payload.line,
         machine:m.machine,
         st3:m.st3, st4:m.st4, st5:m.st5, st6:m.st6, st7:m.st7, st8:m.st8, st9:m.st9,
         legsIn:m.legsIn, missCount:m.missCount, missRate:m.missRate,
@@ -1624,7 +1634,7 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
       var idSet = {}, add = [];
       group.forEach(function(s){ idSet[s.id] = true; add = add.concat(s.remoteRows); });
       var msg = group.length === 1
-        ? 'บันทึก ' + group[0].head.line + ' ' + group[0].head.shift + ' ' + group[0].head.date + ' ' + group[0].head.time
+        ? 'บันทึก ' + group[0].head.line + ' ' + group[0].head.shift + (group[0].head.period ? ' ' + group[0].head.period : '') + ' ' + group[0].head.date + ' ' + group[0].head.time
         : 'ส่งข้อมูล ' + group.length + ' รอบ (' + ym + ')';
       await modifyMonth(ym, function(list){
         return list.filter(function(r){ return !idSet[r.batchId]; }).concat(add);
@@ -1663,7 +1673,7 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
       await modifyMonth(yms[i], function(list){
         var kept = list.filter(function(r){ return r.batchId !== label.batchId; });
         return kept.length === list.length ? null : kept;
-      }, 'ลบรอบตรวจ ' + label.line + ' ' + label.shift + ' ' + label.date + ' ' + label.time);
+      }, 'ลบรอบตรวจ ' + label.line + ' ' + label.shift + (label.period ? ' ' + label.period : '') + ' ' + label.date + ' ' + label.time);
     }
   }
 
@@ -1726,6 +1736,7 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
       date: dateThai,
       time: el.timeInput.value,
       shift: el.shiftSelect.value,
+      period: el.periodSelect.value,
       line: el.lineSelect.value,
       notes: el.notesInput.value.trim(),
       machines: machines,
@@ -1813,7 +1824,8 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
   function clearFullForm(silent){
     el.lineSelect.value = '';
     el.shiftSelect.value = '';
-    [el.lineSelect, el.shiftSelect].forEach(function(s){ s.classList.add('placeholder-active'); });
+    el.periodSelect.value = '';
+    [el.lineSelect, el.shiftSelect, el.periodSelect].forEach(function(s){ s.classList.add('placeholder-active'); });
     el.notesInput.value = '';
     initHeaderDefaults();
     renderMachines();
@@ -1884,7 +1896,7 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
       return '' +
         '<div class="history-batch" data-batch-id="'+bid+'">' +
           '<div class="history-batch-head">' +
-            '<span class="htitle">'+head.line+' • '+head.shift+'</span>' +
+            '<span class="htitle">'+head.line+' • '+head.shift+(head.period ? ' • '+head.period : '')+'</span>' +
             '<span class="hmeta">'+head.date+' '+head.time+'</span>' +
           '</div>' +
           '<div class="history-batch-head">' +
@@ -1912,8 +1924,9 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
     updateThaiDateHint();
     el.timeInput.value = head.time;
     el.shiftSelect.value = head.shift;
+    el.periodSelect.value = head.period || '';   // รอบเก่าที่บันทึกก่อนมีช่วงเวลาจะว่างไว้ให้เลือกเอง
     el.lineSelect.value = head.line;
-    [el.lineSelect, el.shiftSelect].forEach(function(s){ s.classList.remove('placeholder-active'); });
+    [el.lineSelect, el.shiftSelect, el.periodSelect].forEach(function(s){ s.classList.toggle('placeholder-active', s.value === ''); });
     el.notesInput.value = head.notes || '';
 
     renderMachines();
@@ -1990,7 +2003,7 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
     if(rows.length === 0) return;
     if(deletingBatch) return;
     var h0 = rows[0];
-    var ok = await askDeleteConfirm(h0.line + ' • ' + h0.shift + ' • ' + h0.date + ' ' + (h0.time || '') + ' (' + rows.length + ' เครื่อง)');
+    var ok = await askDeleteConfirm(h0.line + ' • ' + h0.shift + (h0.period ? ' • ' + h0.period : '') + ' • ' + h0.date + ' ' + (h0.time || '') + ' (' + rows.length + ' เครื่อง)');
     if(!ok) return;
     deletingBatch = true;
     try{
@@ -2011,7 +2024,7 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
     if(ghConfigured()){
       var yms = uniq([head.dateIso.slice(0,7)].concat(head.cleanupYms || []));
       try{
-        await deleteBatchRemote(yms, {batchId: bid, line: head.line, shift: head.shift, date: head.date, time: head.time});
+        await deleteBatchRemote(yms, {batchId: bid, line: head.line, shift: head.shift, period: head.period, date: head.date, time: head.time});
       }catch(e){
         // Offline and this round never reached GitHub: deleting the local copy is enough.
         if(!(e && e.status === 0 && !hadRemote)){
@@ -2082,7 +2095,7 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
   });
 
   /* ===================== Excel export ===================== */
-  var EXPORT_HEADERS = ['วันที่','เวลา','กะ','Line','เครื่อง',
+  var EXPORT_HEADERS = ['วันที่','เวลา','กะ','ช่วงเวลา','Line','เครื่อง',
     'St.3','St.4','St.5','St.6','St.7','St.8','St.9',
     'AVG. Miss rate','จำนวนขาเข้า','จำนวนขา Miss rate','AVG','หมายเหตุ'];
 
@@ -2103,7 +2116,7 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
     }
 
     var dataRows = rows.map(function(h){
-      return [h.date, h.time||'', h.shift, h.line, h.machine,
+      return [h.date, h.time||'', h.shift, h.period||'', h.line, h.machine,
         h.st3,h.st4,h.st5,h.st6,h.st7,h.st8,h.st9,
         h.missRate, h.legsIn, h.missCount, h.avgLineRate, h.notes||''];
     });
@@ -2118,12 +2131,12 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
       ws[XLSX.utils.encode_cell({r:i + 1, c:0})] = {t:'n', v:serial, z:'dd/mm/yyyy'};
     });
     for(var r=1; r<=range.e.r; r++){
-      [12,15].forEach(function(c){
+      [13,16].forEach(function(c){
         var ref = XLSX.utils.encode_cell({r:r,c:c});
         if(ws[ref]) ws[ref].z = '0.0%';
       });
     }
-    ws['!cols'] = EXPORT_HEADERS.map(function(h,i){ return {wch: i===4?8:i===16?24:11}; });
+    ws['!cols'] = EXPORT_HEADERS.map(function(h,i){ return {wch: i===5?8:i===17?24:11}; });
 
     var wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'MissRate');
@@ -2291,7 +2304,7 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
       return '' +
         '<div class="preview-batch">' +
           '<div class="preview-batch-head">' +
-            '<span class="htitle">'+head.line+' • '+head.shift+'</span>' +
+            '<span class="htitle">'+head.line+' • '+head.shift+(head.period ? ' • '+head.period : '')+'</span>' +
             '<span class="hmeta">'+head.date+' '+(head.time||'')+' • AVG '+fmtPct(head.avgLineRate)+'</span>' +
           '</div>' +
           (head.notes ? '<div class="hmeta" style="font-family:var(--font-body);color:var(--steel-600);margin-bottom:4px;">หมายเหตุ: '+head.notes+'</div>' : '') +
