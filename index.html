@@ -156,6 +156,11 @@ button, select, input, textarea{font-family:inherit;}
 #appVersionText{font-family:var(--font-mono);color:var(--steel-900);}
 
 /* ---------- Generic form controls (shared look) ---------- */
+.date-wrap{position:relative;}
+.date-wrap input[type="text"]{padding-right:52px;}
+.date-pick-btn{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:none;background:transparent;font-size:20px;line-height:1;padding:6px 8px;cursor:pointer;border-radius:8px;}
+.date-pick-btn:active{background:var(--steel-100);}
+.date-wrap input.date-native{position:absolute;right:0;bottom:0;width:1px;height:1px;padding:0;border:0;opacity:0;pointer-events:none;}
 input[type="date"],input[type="time"],select,textarea,input[type="number"],input[type="text"],input[type="url"],input[type="password"]{
   border:1.5px solid var(--steel-300);border-radius:var(--radius-sm);padding:11px 12px;font-size:16px;
   color:var(--steel-900);background:var(--paper);width:100%;transition:border-color .15s ease;
@@ -488,8 +493,12 @@ table.preview-table tr.row-danger td{background:var(--red-bg);color:#8a2c26;}
     <h2>ข้อมูลรอบตรวจ</h2>
     <div class="field-grid">
       <div class="field">
-        <label for="dateInput">วันที่</label>
-        <input type="date" id="dateInput">
+        <label for="dateText">วันที่ (วัน/เดือน/ปี)</label>
+        <div class="date-wrap">
+          <input type="text" id="dateText" inputmode="numeric" placeholder="วว/ดด/ปปปป" maxlength="10" autocomplete="off">
+          <button type="button" class="date-pick-btn" id="datePickBtn" aria-label="เลือกวันที่จากปฏิทิน">📅</button>
+          <input type="date" id="dateInput" tabindex="-1" aria-hidden="true" class="date-native">
+        </div>
         <span class="thai-date-hint" id="thaiDateHint">→ พ.ศ. —</span>
       </div>
       <div class="field">
@@ -662,7 +671,7 @@ table.preview-table tr.row-danger td{background:var(--red-bg);color:#8a2c26;}
 
 <script>
 /* ===================== SHARED (shell-level) ===================== */
-var APP_VERSION = '2026-09-30-line-label';
+var APP_VERSION = '2026-10-02-date-dmy';
 var MENTION_KEY = 'qcMentionConfigV1';
 var LEGACY_PA_KEY = 'qcSharedPaUrlV1';
 
@@ -909,6 +918,8 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
   /* ===================== Element refs ===================== */
   var el = {
     dateInput: document.getElementById('dateInput'),
+    dateText: document.getElementById('dateText'),
+    datePickBtn: document.getElementById('datePickBtn'),
     thaiDateHint: document.getElementById('thaiDateHint'),
     timeInput: document.getElementById('timeInput'),
     lineSelect: document.getElementById('lineSelect'),
@@ -998,13 +1009,53 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
   /* showToast, buildMentionText, loadXlsxLibrary are provided by the shared script block above */
 
   /* ===================== Header field init ===================== */
+  /* ช่องวันที่แสดงเป็น วัน/เดือน/ปี (ค.ศ.) เสมอ ไม่ขึ้นกับภาษาเครื่อง; ค่าจริงเก็บใน dateInput (yyyy-mm-dd) ตามเดิม */
+  function isoToDmy(iso){
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+    return m ? m[3] + '/' + m[2] + '/' + m[1] : '';
+  }
   function updateThaiDateHint(){
+    el.dateText.value = isoToDmy(el.dateInput.value);
+    el.dateText.classList.remove('input-warn');
+    renderThaiDateHint();
+  }
+  function renderThaiDateHint(){
     if(!el.dateInput.value){ el.thaiDateHint.textContent = '→ พ.ศ. —'; return; }
     var parts = el.dateInput.value.split('-'); // yyyy-mm-dd
     var d = new Date(Number(parts[0]), Number(parts[1])-1, Number(parts[2]));
     el.thaiDateHint.textContent = '→ ' + toThaiDateStr(d) + '  (พ.ศ. ' + (d.getFullYear()+543) + ')';
   }
   el.dateInput.addEventListener('change', updateThaiDateHint);
+
+  el.dateText.addEventListener('input', function(){
+    var digits = el.dateText.value.replace(/\D/g, '').slice(0, 8);
+    var out = digits.slice(0, 2);
+    if(digits.length > 2) out += '/' + digits.slice(2, 4);
+    if(digits.length > 4) out += '/' + digits.slice(4);
+    el.dateText.value = out;
+    var ok = false;
+    if(digits.length === 8){
+      var d = Number(digits.slice(0, 2)), m = Number(digits.slice(2, 4)), y = Number(digits.slice(4));
+      if(y > 2400) y -= 543;                     // พิมพ์เป็น พ.ศ. ก็รับ
+      var dt = new Date(y, m - 1, d);
+      if(y >= 2000 && dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d){
+        el.dateInput.value = y + '-' + pad2(m) + '-' + pad2(d);
+        ok = true;
+        updateThaiDateHint();                    // จัดรูปแบบข้อความให้เป็น ค.ศ. ถ้าพิมพ์ พ.ศ.
+      }
+    }
+    if(!ok){
+      el.dateInput.value = '';
+      el.dateText.classList.toggle('input-warn', digits.length === 8);
+      renderThaiDateHint();
+    }
+  });
+  el.datePickBtn.addEventListener('click', function(){
+    try{
+      if(typeof el.dateInput.showPicker === 'function') el.dateInput.showPicker();
+      else el.dateInput.click();
+    }catch(e){ el.dateText.focus(); }
+  });
 
   function initHeaderDefaults(){
     el.dateInput.value = todayIsoLocal();
@@ -2135,7 +2186,7 @@ document.getElementById('xlsxRetryBtn').addEventListener('click', function(){
       var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(h.dateIso || '');
       if(!m) return;
       var serial = Math.round((Date.UTC(+m[1], +m[2] - 1, +m[3]) - Date.UTC(1899, 11, 30)) / 86400000);
-      ws[XLSX.utils.encode_cell({r:i + 1, c:0})] = {t:'n', v:serial, z:'dd/mm/yyyy'};
+      ws[XLSX.utils.encode_cell({r:i + 1, c:0})] = {t:'n', v:serial, z:'[$-809]dd/mm/yyyy;@'}   /* [$-809] = วัน/เดือน/ปี แบบอังกฤษ (UK) กัน Excel/แอพดูไฟล์ สลับเป็น เดือน/วัน/ปี ตามภาษาเครื่อง */;
     });
     for(var r=1; r<=range.e.r; r++){
       [13,16].forEach(function(c){
